@@ -228,24 +228,51 @@ def get_current_balance(address):
     return 0
 
 
-def fetch_eth_price_history():
-    """Fetch ETH price history from CoinGecko (free, no key needed)."""
-    print("Fetching ETH price history from CoinGecko...")
-    try:
-        # max days for free tier
-        url = "https://api.coingecko.com/api/v3/coins/ethereum/market_chart"
-        params = {"vs_currency": "usd", "days": "max", "interval": "daily"}
-        resp = requests.get(url, params=params, timeout=30)
-        data = resp.json()
-        prices = {}
-        for ts_ms, price in data.get("prices", []):
-            date_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
-            prices[date_str] = round(price, 2)
-        print(f"  Got {len(prices)} daily prices")
-        return prices
-    except Exception as e:
-        print(f"  Failed to fetch prices: {e}")
+def load_eth_prices_from_csv():
+    """Load historical ETH prices from CSV file."""
+    csv_path = DATA_DIR / "ETH_USD.csv"
+    if not csv_path.exists():
+        # Try parent directory
+        csv_path = Path("ETH_USD.csv")
+    if not csv_path.exists():
+        print("  ETH_USD.csv not found, skipping CSV prices")
         return {}
+    
+    prices = {}
+    with open(csv_path, "r") as f:
+        header = True
+        for line in f:
+            if header:
+                header = False
+                continue
+            parts = line.strip().split(",")
+            if len(parts) >= 2:
+                date_str = parts[0].strip()
+                try:
+                    close_price = float(parts[1])
+                    prices[date_str] = round(close_price, 2)
+                except (ValueError, IndexError):
+                    continue
+    print(f"  Loaded {len(prices)} prices from CSV")
+    return prices
+
+
+def fetch_eth_price_today():
+    """Fetch current ETH price from Etherscan API (reliable, uses existing API key)."""
+    print("Fetching current ETH price from Etherscan...")
+    try:
+        result = etherscan_get({
+            "module": "stats",
+            "action": "ethprice"
+        })
+        if result and isinstance(result, dict):
+            usd_price = float(result.get("ethusd", 0))
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            print(f"  Current ETH price: ${usd_price}")
+            return {today: round(usd_price, 2)}
+    except Exception as e:
+        print(f"  Failed to fetch price: {e}")
+    return {}
 
 
 def run_full_collection():
@@ -265,6 +292,18 @@ def run_full_collection():
 
         daily_balances, sell_events = process_transactions(address, txs)
         current_balance = get_current_balance(address)
+
+        # Fix for genesis/pre-mine allocations not captured in txlist
+        # Calculate offset between actual balance and calculated balance
+        if daily_balances:
+            sorted_dates = sorted(daily_balances.keys())
+            calculated_final = daily_balances[sorted_dates[-1]]
+            offset = current_balance - calculated_final
+            if abs(offset) > 1:  # Significant difference = missing initial balance
+                print(f"  Balance offset detected: {offset:.4f} ETH (genesis/initial allocation)")
+                for date_str in daily_balances:
+                    daily_balances[date_str] = round(daily_balances[date_str] + offset, 4)
+
         print(f"  Daily snapshots: {len(daily_balances)}")
         print(f"  Sell events (>10 ETH): {len(sell_events)}")
         print(f"  Current balance: {current_balance:.4f} ETH")
@@ -283,8 +322,10 @@ def run_full_collection():
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
 
-    # Fetch ETH prices
-    eth_prices = fetch_eth_price_history()
+    # Fetch ETH prices: CSV history + today from Etherscan
+    eth_prices = load_eth_prices_from_csv()
+    today_price = fetch_eth_price_today()
+    eth_prices.update(today_price)
 
     # Calculate group totals (vitalik combined, ef combined)
     group_balances = {"vitalik": {}, "ef": {}}
@@ -360,6 +401,17 @@ def run_update():
         # Merge with existing data
         existing_balances = existing.get("daily_balances", {})
         existing_balances.update(new_balances)
+
+        # Re-apply offset correction using current actual balance
+        current_balance = get_current_balance(address)
+        if existing_balances:
+            sorted_dates = sorted(existing_balances.keys())
+            calculated_final = existing_balances[sorted_dates[-1]]
+            offset = current_balance - calculated_final
+            if abs(offset) > 1:
+                for date_str in existing_balances:
+                    existing_balances[date_str] = round(existing_balances[date_str] + offset, 4)
+
         existing["daily_balances"] = dict(sorted(existing_balances.items()))
 
         existing_sells = existing.get("sell_events", [])
@@ -369,7 +421,6 @@ def run_update():
         new_last_block = max(int(tx.get("blockNumber", 0)) for tx in txs)
         existing["last_block"] = max(last_block, new_last_block)
 
-        current_balance = get_current_balance(address)
         existing["current_balance"] = round(current_balance, 4)
         existing["last_updated"] = datetime.now(timezone.utc).isoformat()
 
@@ -400,11 +451,11 @@ def run_update():
         }
     }
 
-    # Update ETH prices
-    eth_prices = fetch_eth_price_history()
-    if eth_prices:
+    # Update ETH price: only today from Etherscan
+    today_price = fetch_eth_price_today()
+    if today_price:
         existing_prices = chart_data.get("eth_prices", {})
-        existing_prices.update(eth_prices)
+        existing_prices.update(today_price)
         chart_data["eth_prices"] = existing_prices
 
     chart_data["metadata"]["generated_at"] = datetime.now(timezone.utc).isoformat()
