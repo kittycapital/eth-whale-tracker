@@ -38,6 +38,11 @@ WALLETS = {
         "label": "Vitalik (Vb3)",
         "group": "vitalik"
     },
+    "vitalik_safe": {
+        "address": "0xfEB016D0D14AC0Fa6d69199608B0776d007203B2",
+        "label": "Vitalik (Gnosis Safe)",
+        "group": "vitalik"
+    },
     "ef_multisig": {
         "address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
         "label": "Ethereum Foundation (Multisig)",
@@ -55,8 +60,12 @@ WALLETS = {
     }
 }
 
+# WETH contract address (for tracking WETH token swaps as sell events)
+WETH_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
 # Known exchange deposit addresses (for sell detection)
-EXCHANGE_ADDRESSES = {
+KNOWN_ADDRESSES = {
+    # Exchanges
     "0x28c6c06298d514db089934071355e5743bf21d60": "Binance",
     "0x21a31ee1afc51d94c2efccaa2092ad1028285549": "Binance",
     "0xdfd5293d8e347dfe59e90efd55b2956a1343963d": "Binance",
@@ -73,6 +82,14 @@ EXCHANGE_ADDRESSES = {
     "0x71660c4005ba85c37ccec55d0c4493e66fe775d3": "Coinbase",
     "0xa090e606e30bd747d4e6245a1517ebe430f0057e": "Coinbase",
     "0x77134cbc06cb00b66f4c7e623d5fdbf6777635ec": "Coinbase",
+    # DEX Protocols
+    "0x9008d19f58aabd9ed0d60971565aa8510560ab41": "CoW Protocol",
+    "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad": "Uniswap Universal Router",
+    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": "Uniswap V2 Router",
+    "0xe592427a0aece92de3edee1f18e0157c05861564": "Uniswap V3 Router",
+    "0xdef1c0ded9bec7f1a1670819833240f027b25eff": "0x Exchange",
+    "0x1111111254eeb25477b68fb85ed929f73a960582": "1inch Router",
+    "0x881d40237659c251811cec9c364ef91dc08d300c": "Metamask Swap",
 }
 
 
@@ -151,6 +168,31 @@ def fetch_all_transactions(address, start_block=0):
             break
         page += 1
 
+    # WETH token transfers (for detecting DEX swaps like CoW Protocol)
+    print(f"  Fetching WETH token transfers from block {start_block}...")
+    page = 1
+    while True:
+        txs = etherscan_get({
+            "module": "account",
+            "action": "tokentx",
+            "contractaddress": WETH_ADDRESS,
+            "address": address,
+            "startblock": start_block,
+            "endblock": 99999999,
+            "page": page,
+            "offset": 10000,
+            "sort": "asc"
+        })
+        if not txs or not isinstance(txs, list):
+            break
+        for tx in txs:
+            tx["_type"] = "weth_transfer"
+        all_txs.extend(txs)
+        print(f"    Page {page}: {len(txs)} WETH transfers")
+        if len(txs) < 10000:
+            break
+        page += 1
+
     # Sort by timestamp
     all_txs.sort(key=lambda x: int(x.get("timeStamp", 0)))
     return all_txs
@@ -177,6 +219,26 @@ def process_transactions(address, txs):
         if is_error and tx.get("_type") == "normal":
             continue
 
+        # WETH transfers don't affect native ETH balance - only track as sell events
+        if tx.get("_type") == "weth_transfer":
+            date_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+            # Detect WETH outgoing transfers as sell events (DEX swaps)
+            if from_addr == address_lower and value_wei > 10 * 1e18:
+                eth_amount = value_wei / 1e18
+                dest = KNOWN_ADDRESSES.get(to_addr, None)
+                tx_hash = tx.get("hash", "")
+                if not any(s["tx_hash"] == tx_hash for s in sell_events):
+                    sell_events.append({
+                        "date": date_str,
+                        "timestamp": ts,
+                        "amount_eth": round(eth_amount, 4),
+                        "to": to_addr,
+                        "exchange": dest or "DEX Swap (WETH)",
+                        "tx_hash": tx_hash,
+                        "type": "weth_swap"
+                    })
+            continue  # Don't modify ETH balance
+
         # Gas cost (only for normal outgoing txs)
         gas_cost = 0
         if tx.get("_type") == "normal" and from_addr == address_lower:
@@ -201,15 +263,15 @@ def process_transactions(address, txs):
         # Detect sell events (outgoing > 10 ETH)
         if from_addr == address_lower and value_wei > 10 * 1e18:
             eth_amount = value_wei / 1e18
-            exchange = EXCHANGE_ADDRESSES.get(to_addr, None)
+            dest = KNOWN_ADDRESSES.get(to_addr, None)
             sell_events.append({
                 "date": date_str,
                 "timestamp": ts,
                 "amount_eth": round(eth_amount, 4),
                 "to": to_addr,
-                "exchange": exchange,
+                "exchange": dest,
                 "tx_hash": tx.get("hash", ""),
-                "type": "exchange_sell" if exchange else "large_outflow"
+                "type": "known_dest" if dest else "large_outflow"
             })
 
     return daily_balances, sell_events
