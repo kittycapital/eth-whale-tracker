@@ -387,43 +387,38 @@ def run_update():
         print(f"\nUpdating: {wallet_info['label']} (from block {last_block})")
 
         txs = fetch_all_transactions(address, start_block=last_block + 1)
-        if not txs:
+
+        if txs:
+            print(f"  New transactions: {len(txs)}")
+            new_balances, new_sells = process_transactions(address, txs)
+            existing_balances = existing.get("daily_balances", {})
+            existing_balances.update(new_balances)
+            existing["daily_balances"] = existing_balances
+
+            existing_sells = existing.get("sell_events", [])
+            existing_sells.extend(new_sells)
+            existing["sell_events"] = existing_sells
+
+            new_last_block = max(int(tx.get("blockNumber", 0)) for tx in txs)
+            existing["last_block"] = max(last_block, new_last_block)
+        else:
             print("  No new transactions")
-            # Still update current balance
-            current_balance = get_current_balance(address)
-            existing["current_balance"] = round(current_balance, 4)
-            existing["last_updated"] = datetime.now(timezone.utc).isoformat()
-            continue
 
-        print(f"  New transactions: {len(txs)}")
-        new_balances, new_sells = process_transactions(address, txs)
-
-        # Merge with existing data
-        existing_balances = existing.get("daily_balances", {})
-        existing_balances.update(new_balances)
-
-        # Re-apply offset correction using current actual balance
+        # ALWAYS re-apply offset correction using current actual balance
         current_balance = get_current_balance(address)
+        existing_balances = existing.get("daily_balances", {})
         if existing_balances:
             sorted_dates = sorted(existing_balances.keys())
             calculated_final = existing_balances[sorted_dates[-1]]
             offset = current_balance - calculated_final
             if abs(offset) > 1:
+                print(f"  Re-applying offset correction: {offset:.4f} ETH")
                 for date_str in existing_balances:
                     existing_balances[date_str] = round(existing_balances[date_str] + offset, 4)
-
-        existing["daily_balances"] = dict(sorted(existing_balances.items()))
-
-        existing_sells = existing.get("sell_events", [])
-        existing_sells.extend(new_sells)
-        existing["sell_events"] = existing_sells
-
-        new_last_block = max(int(tx.get("blockNumber", 0)) for tx in txs)
-        existing["last_block"] = max(last_block, new_last_block)
+                existing["daily_balances"] = existing_balances
 
         existing["current_balance"] = round(current_balance, 4)
         existing["last_updated"] = datetime.now(timezone.utc).isoformat()
-
         chart_data["wallets"][wallet_id] = existing
 
     # Recalculate group totals
@@ -451,12 +446,18 @@ def run_update():
         }
     }
 
-    # Update ETH price: only today from Etherscan
+    # Backfill ETH prices from CSV if sparse, then add today from Etherscan
+    existing_prices = chart_data.get("eth_prices", {})
+    if len(existing_prices) < 100:
+        print("\n  Prices sparse, backfilling from CSV...")
+        csv_prices = load_eth_prices_from_csv()
+        csv_prices.update(existing_prices)  # existing overwrites CSV (newer)
+        existing_prices = csv_prices
+
     today_price = fetch_eth_price_today()
     if today_price:
-        existing_prices = chart_data.get("eth_prices", {})
         existing_prices.update(today_price)
-        chart_data["eth_prices"] = existing_prices
+    chart_data["eth_prices"] = existing_prices
 
     chart_data["metadata"]["generated_at"] = datetime.now(timezone.utc).isoformat()
     chart_data["metadata"]["mode"] = "update"
