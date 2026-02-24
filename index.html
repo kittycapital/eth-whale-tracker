@@ -2,913 +2,476 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ETH Whale Wallet Tracker | HerdVibe</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ETH 고래 지갑 추적 | Herdvibe</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.1/kakao.min.js" crossorigin="anonymous" async></script>
 <style>
-  :root {
-    --bg-primary: #0a0e17;
-    --bg-card: #111827;
-    --bg-card-hover: #1a2236;
-    --border: #1e2a3a;
-    --text-primary: #e2e8f0;
-    --text-secondary: #8892a4;
-    --text-muted: #4a5568;
-    --accent-vitalik: #6366f1;
-    --accent-vitalik-glow: rgba(99,102,241,0.3);
-    --accent-ef: #f59e0b;
-    --accent-ef-glow: rgba(245,158,11,0.3);
-    --accent-sell: #ef4444;
-    --accent-sell-glow: rgba(239,68,68,0.4);
-    --accent-green: #10b981;
-  }
+:root{--hv-primary:#3b82f6;--hv-primary-light:#60a5fa;--hv-primary-dark:#2563eb;--hv-primary-glow:rgba(59,130,246,0.12);--hv-up:#22c55e;--hv-up-bg:rgba(34,197,94,0.1);--hv-down:#ef4444;--hv-down-bg:rgba(239,68,68,0.1);--hv-warning:#f59e0b;--hv-warning-bg:rgba(245,158,11,0.1);--hv-neutral:#6b7280;--hv-bg-base:#000;--hv-bg-surface:#0a0a0a;--hv-bg-card:#111;--hv-bg-card-hover:#181818;--hv-bg-elevated:#1a1a1a;--hv-text-primary:#e5e5e5;--hv-text-secondary:#8a8a8a;--hv-text-tertiary:#555;--hv-text-muted:#3a3a3a;--hv-border:rgba(255,255,255,0.06);--hv-border-strong:rgba(255,255,255,0.12);--hv-font-display:'Plus Jakarta Sans',sans-serif;--hv-font-body:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;--hv-font-mono:'JetBrains Mono','SF Mono',monospace;--hv-space-xs:8px;--hv-space-sm:12px;--hv-space-md:16px;--hv-space-lg:24px;--hv-space-xl:32px;--hv-radius-sm:6px;--hv-radius-md:10px;--hv-radius-lg:14px;--hv-shadow-sm:0 1px 3px rgba(0,0,0,.5);--hv-shadow-md:0 4px 12px rgba(0,0,0,.6);--hv-shadow-lg:0 8px 32px rgba(0,0,0,.7);--hv-transition-fast:150ms ease;--hv-transition:250ms ease;--hv-max-width:960px;--hv-header-height:60px;--cl-vitalik:#6366f1;--cl-ef:#f59e0b;--cl-sell:#ef4444;--cl-outflow:#f97316;--cl-price:#3b82f6}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden}body{font-family:var(--hv-font-body);background:var(--hv-bg-base);color:var(--hv-text-primary);line-height:1.6;min-height:100vh;overflow-x:hidden}::selection{background:var(--hv-primary);color:#fff}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--hv-bg-base)}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* HEADER */
+.hv-header{position:sticky;top:0;z-index:100;height:var(--hv-header-height);background:rgba(0,0,0,.9);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--hv-border);display:flex;align-items:center;padding:0 var(--hv-space-lg)}.hv-header-inner{width:100%;max-width:var(--hv-max-width);margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative}.hv-header-center{display:flex;flex-direction:column;align-items:center;text-align:center}.hv-header-center h1{font-family:var(--hv-font-display);font-size:1.3rem;font-weight:600;color:var(--hv-text-primary);white-space:nowrap}.hv-header-category{font-size:.7rem;color:var(--hv-text-tertiary);font-weight:500;text-transform:uppercase;letter-spacing:.08em}.hv-header-right{position:absolute;right:0;display:flex;align-items:center;gap:var(--hv-space-xs)}.hv-update-badge{font-family:var(--hv-font-mono);font-size:.688rem;color:var(--hv-text-tertiary);white-space:nowrap;display:flex;align-items:center;gap:6px}.hv-live-dot{width:5px;height:5px;background:var(--hv-up);border-radius:50%;animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  body {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Noto Sans KR', sans-serif;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
+.hv-page{max-width:var(--hv-max-width);margin:0 auto;padding:var(--hv-space-lg)}
 
-  .container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 24px 20px;
-  }
+/* CARDS */
+.hv-card{background:var(--hv-bg-card);border:1px solid var(--hv-border);border-radius:var(--hv-radius-lg);overflow:hidden;margin-bottom:var(--hv-space-lg)}.hv-card-head{display:flex;align-items:center;justify-content:space-between;padding:14px var(--hv-space-lg);border-bottom:1px solid var(--hv-border);flex-wrap:wrap;gap:var(--hv-space-xs)}.hv-card-head h2{font-size:.875rem;font-weight:600;color:var(--hv-text-primary)}.hv-card-body{padding:var(--hv-space-lg)}
 
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
+/* SUMMARY */
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:var(--hv-space-lg)}.summary-card{background:var(--hv-bg-card);border:1px solid var(--hv-border);border-radius:var(--hv-radius-lg);padding:var(--hv-space-lg)}.summary-label{font-size:.72rem;color:var(--hv-text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:500}.summary-value{font-family:var(--hv-font-mono);font-size:1.6rem;font-weight:700;line-height:1.2}.summary-sub{font-family:var(--hv-font-mono);font-size:.75rem;color:var(--hv-text-muted);margin-top:4px}
 
-  .header-left h1 {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #6366f1, #a78bfa, #f59e0b);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:4px;background:var(--hv-bg-card);border:1px solid var(--hv-border);border-radius:12px;padding:4px;max-width:400px;margin-left:auto;margin-right:auto;margin-bottom:var(--hv-space-lg)}.filter-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 8px;border-radius:9px;border:none;background:transparent;color:var(--hv-text-secondary);font-family:var(--hv-font-body);font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s ease;-webkit-tap-highlight-color:transparent}.filter-tab:hover{color:var(--hv-text-primary);background:rgba(255,255,255,.03)}.filter-tab.active{background:var(--hv-bg-elevated);color:var(--hv-text-primary);font-weight:600}
 
-  .header-left .subtitle {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: 2px;
-  }
+/* TIME RANGE */
+.tf-tabs{display:flex;gap:3px;background:var(--hv-bg-base);border-radius:8px;padding:3px}.tf-tab{padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--hv-text-muted);font-family:var(--hv-font-body);font-size:.72rem;font-weight:500;cursor:pointer;transition:all .15s ease}.tf-tab:hover{color:var(--hv-text-secondary)}.tf-tab.active{background:var(--hv-bg-elevated);color:var(--hv-text-primary);font-weight:600}
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+/* CHART */
+.chart-wrap{position:relative;height:380px;padding:var(--hv-space-md) var(--hv-space-lg)}.chart-wrap canvas{width:100%!important}
 
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent-green);
-    animation: pulse 2s ease-in-out infinite;
-  }
+/* LEGEND */
+.chart-legend{display:flex;align-items:center;gap:16px;padding:8px var(--hv-space-lg);flex-wrap:wrap}.legend-item{display:flex;align-items:center;gap:6px;font-family:var(--hv-font-mono);font-size:.72rem;color:var(--hv-text-secondary)}.legend-dot{width:8px;height:8px;border-radius:2px}.legend-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid currentColor}
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
+/* TABLE */
+.sell-table{width:100%;border-collapse:collapse;font-size:.78rem}.sell-table th{text-align:left;color:var(--hv-text-tertiary);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--hv-border);font-family:var(--hv-font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}.sell-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--hv-font-mono);font-size:.78rem}.sell-table tr:hover td{background:rgba(255,255,255,.02)}.sell-badge{display:inline-block;font-size:.68rem;padding:2px 8px;border-radius:4px;font-weight:600}.sell-badge.exchange{background:rgba(239,68,68,.12);color:var(--cl-sell)}.sell-badge.outflow{background:rgba(249,115,22,.12);color:var(--cl-outflow)}.sell-badge.vitalik{background:rgba(99,102,241,.12);color:var(--cl-vitalik)}.sell-badge.ef{background:rgba(245,158,11,.12);color:var(--cl-ef)}
 
-  .last-update {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
+/* WALLET LIST */
+.wallet-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}.wallet-item:last-child{border-bottom:none}.wallet-label{font-size:.82rem;font-weight:500}.wallet-addr{font-family:var(--hv-font-mono);font-size:.7rem;color:var(--hv-text-muted)}.wallet-addr a{color:var(--hv-text-tertiary);text-decoration:none;transition:color .15s}.wallet-addr a:hover{color:var(--hv-primary-light)}
 
-  /* Summary Cards */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
+/* SHARE */
+.share-bar{display:flex;align-items:center;justify-content:space-between;padding:12px var(--hv-space-lg);border-top:1px solid var(--hv-border);background:var(--hv-bg-surface)}.share-bar-preview{font-size:.75rem;color:var(--hv-text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%;line-height:1.4;font-family:var(--hv-font-mono)}.share-bar-preview span{color:var(--hv-text-secondary);font-weight:500}.share-bar-buttons{display:flex;align-items:center;gap:6px;flex-shrink:0}.share-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:.75rem;font-weight:600;font-family:var(--hv-font-body);cursor:pointer;transition:all var(--hv-transition-fast);border:1px solid var(--hv-border-strong);background:var(--hv-bg-card);color:#999;white-space:nowrap}.share-btn:hover{transform:translateY(-1px);box-shadow:var(--hv-shadow-sm);color:var(--hv-text-primary)}.share-btn svg{flex-shrink:0}.share-btn--x:hover{border-color:#fff;color:#fff;background:#111}.share-btn--kakao:hover{border-color:#FEE500;color:#191919;background:#FEE500}.share-btn--tg:hover{border-color:#26A5E4;color:#fff;background:rgba(38,165,228,.15)}.share-btn--ig:hover{border-color:#E4405F;color:#fff;background:rgba(228,64,95,.15)}.share-btn--copy:hover{border-color:var(--hv-primary);color:var(--hv-primary-light);background:var(--hv-primary-glow)}
+.inline-share{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0;border-top:1px solid var(--hv-border)}.inline-share .lbl{font-size:10px;color:var(--hv-text-muted);margin-right:4px}.inline-share .share-btn{padding:6px 10px}
 
-  .summary-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.2s ease;
-  }
+/* TOAST */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}.toast{background:var(--hv-bg-elevated);border:1px solid var(--hv-border-strong);border-radius:var(--hv-radius-md);padding:10px 18px;font-size:.788rem;color:var(--hv-text-primary);box-shadow:var(--hv-shadow-lg);animation:toastIn .3s ease;border-left:3px solid var(--hv-up)}@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-  .summary-card:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--text-muted);
-  }
+/* SAMPLE BANNER */
+.sample-banner{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:var(--hv-radius-md);padding:10px var(--hv-space-lg);margin-bottom:var(--hv-space-lg);font-size:.78rem;color:var(--cl-ef);display:none}
 
-  .summary-card .label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-  }
+.hidden{display:none!important}
 
-  .summary-card .value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 24px;
-    font-weight: 700;
-  }
-
-  .summary-card .sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-
-  .vitalik-color { color: var(--accent-vitalik); }
-  .ef-color { color: var(--accent-ef); }
-  .sell-color { color: var(--accent-sell); }
-  .green-color { color: var(--accent-green); }
-
-  /* Tab Controls */
-  .tab-controls {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 24px;
-    background: var(--bg-card);
-    border-radius: 10px;
-    padding: 4px;
-    border: 1px solid var(--border);
-    width: fit-content;
-  }
-
-  .tab-btn {
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 20px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .tab-btn:hover { color: var(--text-primary); }
-
-  .tab-btn.active {
-    background: var(--accent-vitalik);
-    color: #fff;
-  }
-
-  .tab-btn.active.ef-tab {
-    background: var(--accent-ef);
-  }
-
-  /* Chart Area */
-  .chart-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-
-  .chart-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .chart-title {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .chart-controls {
-    display: flex;
-    gap: 6px;
-  }
-
-  .range-btn {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .range-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
-  .range-btn.active { background: var(--accent-vitalik); border-color: var(--accent-vitalik); color: #fff; }
-
-  .chart-container {
-    position: relative;
-    height: 400px;
-  }
-
-  /* Sell Events Table */
-  .sell-table-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-
-  .sell-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-
-  .sell-table th {
-    text-align: left;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .sell-table td {
-    padding: 12px;
-    border-bottom: 1px solid rgba(30,42,58,0.5);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-  }
-
-  .sell-table tr:hover td { background: rgba(99,102,241,0.05); }
-
-  .sell-badge {
-    display: inline-block;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: 600;
-  }
-
-  .sell-badge.exchange {
-    background: rgba(239,68,68,0.15);
-    color: var(--accent-sell);
-  }
-
-  .sell-badge.outflow {
-    background: rgba(245,158,11,0.15);
-    color: var(--accent-ef);
-  }
-
-  /* Wallet addresses */
-  .wallet-list {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .wallet-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(30,42,58,0.5);
-  }
-
-  .wallet-item:last-child { border-bottom: none; }
-
-  .wallet-label {
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .wallet-address {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .wallet-address a {
-    color: var(--text-secondary);
-    text-decoration: none;
-  }
-
-  .wallet-address a:hover { color: var(--accent-vitalik); }
-
-  /* Loading & Sample Banner */
-  .sample-banner {
-    background: rgba(245,158,11,0.1);
-    border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 10px;
-    padding: 12px 20px;
-    margin-bottom: 24px;
-    font-size: 13px;
-    color: var(--accent-ef);
-    display: none;
-  }
-
-  .loading-overlay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 300px;
-    color: var(--text-muted);
-    font-size: 14px;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .container { padding: 16px 12px; }
-    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .header-left h1 { font-size: 18px; }
-    .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .summary-card .value { font-size: 18px; }
-    .chart-container { height: 280px; }
-    .chart-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .sell-table { font-size: 12px; }
-    .sell-table td, .sell-table th { padding: 8px 6px; }
-    .wallet-item { flex-direction: column; align-items: flex-start; gap: 4px; }
-  }
+/* RESPONSIVE */
+@media(max-width:768px){:root{--hv-header-height:52px}.hv-page{padding:var(--hv-space-md)}.hv-header{padding:0 var(--hv-space-md)}.hv-update-badge{display:none}.hv-header-center h1{font-size:1.1rem}.chart-wrap{height:300px}.summary-grid{gap:8px}.summary-value{font-size:1.3rem}.share-bar{flex-direction:column;gap:10px;align-items:stretch}.share-bar-preview{max-width:100%}.share-bar-buttons{justify-content:center;flex-wrap:wrap}.share-btn span.label-text{display:none}.share-btn{padding:8px 10px}.inline-share .lbl{display:none}}
+@media(max-width:520px){.hv-page{padding:12px 10px 24px}.chart-wrap{height:260px}.hv-card-head{padding:12px 14px}.summary-card{padding:14px}.summary-value{font-size:1.1rem}.sell-table td,.sell-table th{padding:8px 6px;font-size:.7rem}.filter-tabs{max-width:100%}.filter-tab{font-size:.78rem;padding:8px 4px}}
 </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <h1>🐋 ETH Whale Wallet Tracker</h1>
-      <div class="subtitle">비탈릭 부테린 & 이더리움 파운데이션 지갑 추적</div>
-    </div>
-    <div class="header-right">
-      <div class="status-dot"></div>
-      <span class="last-update" id="lastUpdate">Loading...</span>
-    </div>
-  </div>
+<!-- HEADER -->
+<header class="hv-header"><div class="hv-header-inner"><div class="hv-header-center"><h1>🐋 ETH 고래 지갑 추적</h1><span class="hv-header-category">Vitalik & Ethereum Foundation Wallet Tracker</span></div><div class="hv-header-right"><div class="hv-update-badge" id="updateBadge"><span class="hv-live-dot"></span><span>--</span></div></div></div></header>
 
-  <!-- Sample Data Banner -->
-  <div class="sample-banner" id="sampleBanner">
-    ⚠️ 현재 샘플 데이터를 표시 중입니다. <code>python collect_data.py --full</code>을 실행하여 실제 데이터를 수집하세요.
-  </div>
+<div class="hv-page">
 
-  <!-- Summary Cards -->
+  <!-- SAMPLE BANNER -->
+  <div class="sample-banner" id="sampleBanner">⚠️ 샘플 데이터 표시 중 · <code style="font-size:.72rem">python collect_data.py --full</code> 실행하여 실제 데이터를 수집하세요</div>
+
+  <!-- SUMMARY -->
   <div class="summary-grid">
     <div class="summary-card">
-      <div class="label">Vitalik 총 보유량</div>
-      <div class="value vitalik-color" id="vitalikBalance">—</div>
-      <div class="sub" id="vitalikUsd">—</div>
+      <div class="summary-label">Vitalik 보유량</div>
+      <div class="summary-value" style="color:var(--cl-vitalik)" id="vBal">—</div>
+      <div class="summary-sub" id="vUsd"></div>
     </div>
     <div class="summary-card">
-      <div class="label">EF 총 보유량</div>
-      <div class="value ef-color" id="efBalance">—</div>
-      <div class="sub" id="efUsd">—</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">Vitalik 최근 매도</div>
-      <div class="value sell-color" id="vitalikLastSell">—</div>
-      <div class="sub" id="vitalikLastSellDate">—</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">EF 최근 매도</div>
-      <div class="value sell-color" id="efLastSell">—</div>
-      <div class="sub" id="efLastSellDate">—</div>
+      <div class="summary-label">Ethereum Foundation 보유량</div>
+      <div class="summary-value" style="color:var(--cl-ef)" id="eBal">—</div>
+      <div class="summary-sub" id="eUsd"></div>
     </div>
   </div>
 
-  <!-- Tabs -->
-  <div class="tab-controls">
-    <button class="tab-btn active" onclick="switchTab('vitalik', this)">Vitalik</button>
-    <button class="tab-btn ef-tab" onclick="switchTab('ef', this)">이더리움 재단</button>
+  <!-- FILTER -->
+  <div class="filter-tabs" id="filterTabs">
+    <button class="filter-tab active" data-filter="exchange" onclick="setFilter('exchange',this)">🔴 거래소 매도</button>
+    <button class="filter-tab" data-filter="all" onclick="setFilter('all',this)">📤 대량 전송 전체</button>
   </div>
 
-  <!-- Balance Chart -->
-  <div class="chart-section">
-    <div class="chart-header">
-      <div class="chart-title" id="chartTitle">📊 Vitalik ETH 잔액 추이</div>
-      <div class="chart-controls">
-        <button class="range-btn" onclick="setRange('1y', this)">1Y</button>
-        <button class="range-btn" onclick="setRange('3y', this)">3Y</button>
-        <button class="range-btn active" onclick="setRange('all', this)">ALL</button>
+  <!-- MAIN CHART: ETH PRICE + SELL MARKERS -->
+  <div class="hv-card">
+    <div class="hv-card-head">
+      <h2 id="chartTitle">ETH 가격 · 매도 시점</h2>
+      <div class="tf-tabs" id="timeRange">
+        <button class="tf-tab" data-range="90">3M</button>
+        <button class="tf-tab" data-range="365">1Y</button>
+        <button class="tf-tab" data-range="1095">3Y</button>
+        <button class="tf-tab active" data-range="0">ALL</button>
       </div>
     </div>
-    <div class="chart-container">
-      <canvas id="balanceChart"></canvas>
+    <div class="chart-legend">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--cl-price)"></span> ETH 가격</div>
+      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-vitalik)"></span> Vitalik</div>
+      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-ef)"></span> EF</div>
     </div>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+    <div class="inline-share" id="inlineShare1"></div>
   </div>
 
-  <!-- USD Value Chart -->
-  <div class="chart-section">
-    <div class="chart-header">
-      <div class="chart-title" id="usdChartTitle">💰 USD 환산 가치</div>
+  <!-- SELL TABLE -->
+  <div class="hv-card">
+    <div class="hv-card-head">
+      <h2 id="tableTitle">매도 내역</h2>
+      <span style="font-family:var(--hv-font-mono);font-size:.68rem;color:var(--hv-text-muted)" id="tableCount"></span>
     </div>
-    <div class="chart-container">
-      <canvas id="usdChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Sell Events -->
-  <div class="sell-table-section">
-    <div class="chart-header">
-      <div class="chart-title" id="sellTableTitle">🔴 매도 / 대량 전송 내역</div>
-    </div>
-    <div style="overflow-x: auto;">
+    <div class="hv-card-body" style="padding:0;overflow-x:auto">
       <table class="sell-table">
-        <thead>
-          <tr>
-            <th>날짜</th>
-            <th>수량 (ETH)</th>
-            <th>유형</th>
-            <th>거래소 / 대상</th>
-          </tr>
-        </thead>
-        <tbody id="sellTableBody">
-        </tbody>
+        <thead><tr><th>날짜</th><th>주체</th><th>수량</th><th>ETH 가격</th><th>USD 환산</th><th>유형</th><th>대상</th></tr></thead>
+        <tbody id="sellTableBody"></tbody>
       </table>
     </div>
+    <div class="inline-share" id="inlineShare2"></div>
   </div>
 
-  <!-- Wallet Addresses -->
-  <div class="wallet-list">
-    <div class="chart-title" style="margin-bottom: 16px;">📋 추적 대상 지갑</div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label vitalik-color">Vitalik (vitalik.eth)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" target="_blank">0xd8dA6BF2...96045</a></div>
-      </div>
-    </div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label vitalik-color">Vitalik (Vb)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B" target="_blank">0xAb5801a7...eC9B</a></div>
-      </div>
-    </div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label vitalik-color">Vitalik (Vb3)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0x220866B1A2219f40e72f5c628B65D54268Ca3A9D" target="_blank">0x220866B1...3A9D</a></div>
-      </div>
-    </div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label ef-color">Ethereum Foundation (Multisig)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe" target="_blank">0xde0B2956...7BAe</a></div>
-      </div>
-    </div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label ef-color">Ethereum Foundation (EF 1)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0x5eD8Cee6b63b1c6AFce3AD7c92f4fD7E1B8fAd9F" target="_blank">0x5eD8Cee6...d9F</a></div>
-      </div>
-    </div>
-    <div class="wallet-item">
-      <div>
-        <div class="wallet-label ef-color">Ethereum Foundation (ENS)</div>
-        <div class="wallet-address"><a href="https://etherscan.io/address/0x561b0145d8f5221995bc6A787D8D70Db0604b7B8" target="_blank">0x561b0145...b7B8</a></div>
+  <!-- WALLET ADDRESSES -->
+  <div class="hv-card">
+    <div class="hv-card-head"><h2>📋 추적 대상 지갑</h2></div>
+    <div class="hv-card-body" id="walletList"></div>
+  </div>
+
+  <!-- BOTTOM SHARE BAR -->
+  <div style="background:var(--hv-bg-card);border:1px solid var(--hv-border);border-radius:var(--hv-radius-lg);overflow:hidden">
+    <div class="share-bar" style="border-top:none">
+      <div class="share-bar-preview"><span>ETH 고래 지갑 추적</span> — herdvibe.com</div>
+      <div class="share-bar-buttons">
+        <button class="share-btn share-btn--x" onclick="doShare('twitter',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span class="label-text">트위터</span></button>
+        <button class="share-btn share-btn--kakao" onclick="doShare('kakao',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.112 4.508 6.458l-1.148 4.265a.5.5 0 0 0 .764.533l4.94-3.26c.304.02.612.03.936.03 5.523 0 10-3.462 10-7.735C22 6.463 17.523 3 12 3z"/></svg><span class="label-text">카카오톡</span></button>
+        <button class="share-btn share-btn--tg" onclick="doShare('telegram',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg><span class="label-text">텔레그램</span></button>
+        <button class="share-btn share-btn--ig" onclick="doShare('instagram',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg><span class="label-text">인스타</span></button>
+        <button class="share-btn share-btn--copy" onclick="doShare('link',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="label-text">링크 복사</span></button>
       </div>
     </div>
   </div>
+
 </div>
 
 <script>
-// ============================================================
-// DATA & STATE
-// ============================================================
-let walletData = null;
-let currentTab = 'vitalik';
-let currentRange = 'all';
-let balanceChart = null;
-let usdChart = null;
+/* ===== SHARE ===== */
+var SHARE_URL='https://herdvibe.com/97';
+var xI='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+var kI='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.112 4.508 6.458l-1.148 4.265a.5.5 0 0 0 .764.533l4.94-3.26c.304.02.612.03.936.03 5.523 0 10-3.462 10-7.735C22 6.463 17.523 3 12 3z"/></svg>';
+var tI='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>';
+var lI='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
-const COLORS = {
-  vitalik: { main: '#6366f1', bg: 'rgba(99,102,241,0.15)', sell: '#ef4444' },
-  ef: { main: '#f59e0b', bg: 'rgba(245,158,11,0.15)', sell: '#ef4444' }
-};
+function makeInlineShare(el){if(!el)return;el.innerHTML='<span class="lbl">공유</span><button class="share-btn share-btn--x" onclick="doShare(\'twitter\',this)">'+xI+'</button><button class="share-btn share-btn--kakao" onclick="doShare(\'kakao\',this)">'+kI+'</button><button class="share-btn share-btn--tg" onclick="doShare(\'telegram\',this)">'+tI+'</button><button class="share-btn share-btn--copy" onclick="doShare(\'link\',this)">'+lI+'</button>';}
 
-// ============================================================
-// DATA LOADING
-// ============================================================
-async function loadData() {
-  // Try real data first, fall back to sample
-  let data = null;
-  try {
-    const resp = await fetch('data/wallet_data.json');
-    if (resp.ok) {
-      data = await resp.json();
-    }
-  } catch(e) {}
+function ensureKakao(){try{if(typeof Kakao!=='undefined'&&!Kakao.isInitialized())Kakao.init('a43ed7b39fac35458f4f9df925a279b5');return typeof Kakao!=='undefined'&&Kakao.isInitialized();}catch(e){return false;}}
+ensureKakao();
 
-  if (!data) {
-    try {
-      const resp = await fetch('data/wallet_data_sample.json');
-      if (resp.ok) {
-        data = await resp.json();
-        document.getElementById('sampleBanner').style.display = 'block';
-      }
-    } catch(e) {}
-  }
+function kakaoShare(){if(!ensureKakao()){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');return;}try{Kakao.Share.sendDefault({objectType:'feed',content:{title:'🐋 ETH 고래 지갑 추적',description:'비탈릭 & 이더리움 재단 지갑 매도 시점 · ETH 가격 차트',imageUrl:'https://raw.githubusercontent.com/kittycapital/kittycapital.github.io/main/assets/herdvibe-og.png',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}},buttons:[{title:'대시보드 보기',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}}]});}catch(e){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');}}
 
-  if (!data) {
-    // Inline fallback sample
-    data = getSampleData();
-    document.getElementById('sampleBanner').style.display = 'block';
-  }
+function copyToClipboard(t){try{window.parent.postMessage({type:'clipboard',text:t},'*');}catch(e){}try{navigator.clipboard.writeText(t);}catch(e){}}
 
-  walletData = data;
-  renderAll();
+function flashCopied(btn){if(!btn)return;var orig=btn.innerHTML;btn.style.background='#22c55e';btn.style.color='#fff';btn.style.borderColor='#22c55e';var hl=btn.querySelector('.label-text');btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>'+(hl?'<span class="label-text" style="color:#fff">복사됨!</span>':'');setTimeout(function(){btn.style.background='';btn.style.color='';btn.style.borderColor='';btn.innerHTML=orig;},2000);}
+
+function getShareText(){var vBal=document.getElementById('vBal').textContent;var eBal=document.getElementById('eBal').textContent;return'🐋 ETH 고래 지갑 추적\nVitalik: '+vBal+' ETH\nEF: '+eBal+' ETH\n\n#Ethereum #WhaleTracker via herdvibe.com';}
+
+function doShare(p,btn){var u=SHARE_URL;var t=encodeURIComponent(getShareText());var eu=encodeURIComponent(u);switch(p){case'twitter':window.open('https://twitter.com/intent/tweet?text='+t+'&url='+eu,'_blank');break;case'telegram':window.open('https://t.me/share/url?url='+eu+'&text='+t,'_blank');break;case'kakao':kakaoShare();break;case'instagram':copyToClipboard(u);flashCopied(btn);toast('링크 복사완료! 인스타그램에 붙여넣기 하세요');break;case'link':copyToClipboard(u);flashCopied(btn);toast('링크가 복사되었습니다 ✓');break;}}
+
+function toast(msg){var c=document.querySelector('.toast-wrap');if(!c){c=document.createElement('div');c.className='toast-wrap';document.body.appendChild(c);}var t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transform='translateY(12px)';t.style.transition='.3s';setTimeout(function(){t.remove();},300);},3000);}
+
+/* ===== WATERMARK ===== */
+var watermarkPlugin={id:'herdvibeWatermark',beforeDraw:function(chart){var ctx=chart.ctx,ca=chart.chartArea;if(!ca)return;ctx.save();ctx.font='700 42px "Plus Jakarta Sans",sans-serif';ctx.fillStyle='rgba(255,255,255,0.03)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Herdvibe.com',(ca.left+ca.right)/2,(ca.top+ca.bottom)/2);ctx.restore();}};
+
+/* ===== STATE ===== */
+var DATA=null,mainChart=null;
+var currentFilter='exchange';
+var currentRange=0;
+Chart.defaults.color='#555';Chart.defaults.borderColor='rgba(255,255,255,0.06)';Chart.defaults.font.family="'Noto Sans KR',sans-serif";
+
+/* ===== WALLETS INFO ===== */
+var WALLETS=[
+  {id:'vitalik_main',label:'Vitalik (vitalik.eth)',addr:'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',group:'vitalik'},
+  {id:'vitalik_vb',label:'Vitalik (Vb)',addr:'0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',group:'vitalik'},
+  {id:'vitalik_vb3',label:'Vitalik (Vb3)',addr:'0x220866B1A2219f40e72f5c628B65D54268Ca3A9D',group:'vitalik'},
+  {id:'ef_multisig',label:'Ethereum Foundation (Multisig)',addr:'0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',group:'ef'},
+  {id:'ef_1',label:'Ethereum Foundation (EF 1)',addr:'0x5eD8Cee6b63b1c6AFce3AD7c92f4fD7E1B8fAd9F',group:'ef'},
+  {id:'ef_ens',label:'Ethereum Foundation (ENS)',addr:'0x561b0145d8f5221995bc6A787D8D70Db0604b7B8',group:'ef'}
+];
+
+/* ===== LOAD ===== */
+async function loadData(){
+  var data=null;
+  try{var r=await fetch('data/wallet_data.json');if(r.ok)data=await r.json();}catch(e){}
+  if(!data){try{var r2=await fetch('data/wallet_data_sample.json');if(r2.ok){data=await r2.json();document.getElementById('sampleBanner').style.display='block';}}catch(e){}}
+  if(!data){data=generateSample();document.getElementById('sampleBanner').style.display='block';}
+  DATA=data;
+  init();
 }
 
-function getSampleData() {
-  // Minimal inline sample data
-  const vDates = [], vBals = [], eDates = [], eBals = [];
-  const startETH_v = 500000, startETH_e = 10000000;
-  for (let y = 2016; y <= 2026; y++) {
-    for (let m = 1; m <= 12; m += 3) {
-      const d = `${y}-${String(m).padStart(2,'0')}-01`;
-      const progress = ((y - 2016) * 12 + m) / (10 * 12);
-      vDates.push(d);
-      vBals.push(Math.round(startETH_v * (1 - progress * 0.85)));
-      eDates.push(d);
-      eBals.push(Math.round(startETH_e * (1 - progress * 0.97)));
-    }
+function generateSample(){
+  var dates=[],prices=[];
+  var d=new Date(2015,7,1),p=1;
+  while(d<new Date()){
+    var ds=d.toISOString().slice(0,10);
+    dates.push(ds);
+    // Rough ETH price simulation
+    var yr=(d.getFullYear()-2015)+d.getMonth()/12;
+    if(yr<2)p=1+yr*5;
+    else if(yr<2.5)p=10+Math.sin(yr*3)*200+300;
+    else if(yr<3.5)p=Math.max(80,400-yr*50+Math.sin(yr*5)*100);
+    else if(yr<5)p=130+yr*10+Math.sin(yr*4)*50;
+    else if(yr<6)p=200+Math.pow(yr-4,3)*30;
+    else if(yr<6.5)p=4800-yr*200;
+    else if(yr<8)p=1200+Math.sin(yr*3)*500;
+    else if(yr<9)p=1600+yr*100+Math.sin(yr*2)*400;
+    else p=2500+Math.sin(yr*4)*800;
+    p=Math.max(0.5,p+Math.random()*p*0.02-p*0.01);
+    prices.push(Math.round(p*100)/100);
+    d=new Date(d.getTime()+86400000);
   }
-  const vBalObj = {}, eBalObj = {};
-  vDates.forEach((d, i) => vBalObj[d] = vBals[i]);
-  eDates.forEach((d, i) => eBalObj[d] = eBals[i]);
-
-  return {
-    groups: {
-      vitalik: { daily_balances: vBalObj, sell_events: [
-        {date:'2021-05-12', amount_eth:80000, exchange:null, type:'large_outflow'},
-        {date:'2024-03-15', amount_eth:10000, exchange:'Kraken', type:'exchange_sell'}
+  var vBal={},eBal={};
+  var vb=525000,eb=12000000;
+  for(var i=0;i<dates.length;i++){
+    vb-=Math.random()*80;if(vb<90000)vb=90000;
+    eb-=Math.random()*500;if(eb<270000)eb=270000;
+    if(i%30===0){vBal[dates[i]]=Math.round(vb);eBal[dates[i]]=Math.round(eb);}
+  }
+  return{
+    groups:{
+      vitalik:{daily_balances:vBal,sell_events:[
+        {date:'2017-12-15',amount_eth:30000,exchange:'Coinbase',type:'exchange_sell',timestamp:1513296000},
+        {date:'2018-02-10',amount_eth:20000,exchange:'Kraken',type:'exchange_sell',timestamp:1518220800},
+        {date:'2018-05-20',amount_eth:15000,exchange:'Binance',type:'exchange_sell',timestamp:1526774400},
+        {date:'2021-05-12',amount_eth:80000,exchange:null,type:'large_outflow',to:'India Covid Relief',timestamp:1620777600},
+        {date:'2023-08-15',amount_eth:5000,exchange:'Coinbase',type:'exchange_sell',timestamp:1692057600},
+        {date:'2024-03-15',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1710460800},
+        {date:'2024-07-22',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1721606400},
+        {date:'2024-11-05',amount_eth:12000,exchange:'Kraken',type:'exchange_sell',timestamp:1730764800},
+        {date:'2025-04-10',amount_eth:10000,exchange:'Coinbase',type:'exchange_sell',timestamp:1744243200},
+        {date:'2025-09-20',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1758326400},
+        {date:'2026-01-15',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1768435200}
       ]},
-      ef: { daily_balances: eBalObj, sell_events: [
-        {date:'2018-01-15', amount_eth:100000, exchange:'Kraken', type:'exchange_sell'},
-        {date:'2023-09-10', amount_eth:15000, exchange:'Kraken', type:'exchange_sell'}
+      ef:{daily_balances:eBal,sell_events:[
+        {date:'2017-12-20',amount_eth:100000,exchange:'Kraken',type:'exchange_sell',timestamp:1513728000},
+        {date:'2018-01-15',amount_eth:100000,exchange:'Kraken',type:'exchange_sell',timestamp:1515974400},
+        {date:'2018-05-01',amount_eth:75000,exchange:'Kraken',type:'exchange_sell',timestamp:1525132800},
+        {date:'2019-03-10',amount_eth:50000,exchange:'Kraken',type:'exchange_sell',timestamp:1552176000},
+        {date:'2020-06-15',amount_eth:35000,exchange:'Kraken',type:'exchange_sell',timestamp:1592179200},
+        {date:'2022-06-10',amount_eth:20000,exchange:'Kraken',type:'exchange_sell',timestamp:1654819200},
+        {date:'2023-05-08',amount_eth:15000,exchange:'Coinbase',type:'exchange_sell',timestamp:1683504000},
+        {date:'2023-09-10',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1694304000},
+        {date:'2024-01-20',amount_eth:10000,exchange:'Bitstamp',type:'exchange_sell',timestamp:1705708800},
+        {date:'2024-10-15',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1728950400},
+        {date:'2025-02-10',amount_eth:15000,exchange:'Kraken',type:'exchange_sell',timestamp:1739145600},
+        {date:'2025-08-01',amount_eth:12000,exchange:'Coinbase',type:'exchange_sell',timestamp:1753977600}
       ]}
     },
-    eth_prices: {'2016-01-01':1,'2017-01-01':8,'2018-01-01':900,'2019-01-01':130,'2020-01-01':130,'2021-01-01':730,'2022-01-01':3700,'2023-01-01':1200,'2024-01-01':2300,'2025-01-01':3300,'2026-01-01':2800},
-    metadata: { generated_at: new Date().toISOString(), mode: 'inline_sample' }
+    eth_prices:{},
+    eth_price_series:{dates:dates,prices:prices},
+    metadata:{generated_at:new Date().toISOString(),mode:'sample'}
   };
 }
 
-// ============================================================
-// RENDERING
-// ============================================================
-function renderAll() {
-  renderSummary();
-  renderBalanceChart();
-  renderUsdChart();
-  renderSellTable();
-  renderLastUpdate();
+/* ===== HELPERS ===== */
+function fmtETH(v){if(v>=1e6)return(v/1e6).toFixed(2)+'M';if(v>=1e3)return(v/1e3).toFixed(1)+'K';return v.toFixed(1);}
+function fmtUSD(v){if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(1)+'K';return'$'+v.toFixed(0);}
+
+function getPriceSeries(){
+  if(DATA.eth_price_series)return DATA.eth_price_series;
+  var p=DATA.eth_prices||{};
+  var dates=Object.keys(p).sort();
+  return{dates:dates,prices:dates.map(function(d){return p[d];})};
 }
 
-function renderLastUpdate() {
-  const ts = walletData?.metadata?.generated_at;
-  if (ts) {
-    const d = new Date(ts);
-    document.getElementById('lastUpdate').textContent =
-      d.toLocaleDateString('ko-KR') + ' ' + d.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
-  }
+function findPrice(date){
+  var ps=getPriceSeries();
+  var idx=ps.dates.indexOf(date);
+  if(idx>=0)return ps.prices[idx];
+  // nearest
+  for(var i=ps.dates.length-1;i>=0;i--){if(ps.dates[i]<=date)return ps.prices[i];}
+  return 0;
 }
 
-function renderSummary() {
-  const vGroup = walletData.groups.vitalik;
-  const eGroup = walletData.groups.ef;
-  const prices = walletData.eth_prices || {};
-
-  // Latest balances
-  const vBalances = Object.entries(vGroup.daily_balances).sort((a,b) => a[0].localeCompare(b[0]));
-  const eBalances = Object.entries(eGroup.daily_balances).sort((a,b) => a[0].localeCompare(b[0]));
-  const vLatest = vBalances.length ? vBalances[vBalances.length - 1][1] : 0;
-  const eLatest = eBalances.length ? eBalances[eBalances.length - 1][1] : 0;
-
-  // Latest ETH price
-  const priceEntries = Object.entries(prices).sort((a,b) => a[0].localeCompare(b[0]));
-  const latestPrice = priceEntries.length ? priceEntries[priceEntries.length - 1][1] : 0;
-
-  document.getElementById('vitalikBalance').textContent = formatETH(vLatest);
-  document.getElementById('vitalikUsd').textContent = latestPrice ? '≈ $' + formatUSD(vLatest * latestPrice) : '';
-  document.getElementById('efBalance').textContent = formatETH(eLatest);
-  document.getElementById('efUsd').textContent = latestPrice ? '≈ $' + formatUSD(eLatest * latestPrice) : '';
-
-  // Last sell events
-  const vSells = (vGroup.sell_events || []).sort((a,b) => a.date.localeCompare(b.date));
-  const eSells = (eGroup.sell_events || []).sort((a,b) => a.date.localeCompare(b.date));
-
-  if (vSells.length) {
-    const last = vSells[vSells.length - 1];
-    document.getElementById('vitalikLastSell').textContent = '-' + formatETH(last.amount_eth);
-    document.getElementById('vitalikLastSellDate').textContent = last.date;
-  }
-  if (eSells.length) {
-    const last = eSells[eSells.length - 1];
-    document.getElementById('efLastSell').textContent = '-' + formatETH(last.amount_eth);
-    document.getElementById('efLastSellDate').textContent = last.date;
-  }
+function getLatestBalance(group){
+  var bals=DATA.groups[group]?.daily_balances||{};
+  var keys=Object.keys(bals).sort();
+  return keys.length?bals[keys[keys.length-1]]:0;
 }
 
-function renderBalanceChart() {
-  const group = walletData.groups[currentTab];
-  const balances = group.daily_balances;
-  const sells = group.sell_events || [];
-  const colors = COLORS[currentTab];
+function getSellEvents(filter){
+  var events=[];
+  ['vitalik','ef'].forEach(function(g){
+    var sells=DATA.groups[g]?.sell_events||[];
+    sells.forEach(function(s){
+      if(filter==='exchange'&&s.type!=='exchange_sell')return;
+      events.push(Object.assign({},s,{group:g}));
+    });
+  });
+  events.sort(function(a,b){return a.date.localeCompare(b.date);});
+  return events;
+}
 
-  let entries = Object.entries(balances).sort((a,b) => a[0].localeCompare(b[0]));
-  entries = filterByRange(entries);
+/* ===== INIT ===== */
+function init(){
+  var ts=DATA.metadata?.generated_at;
+  if(ts){document.querySelector('#updateBadge span:last-child').textContent=ts.slice(0,16).replace('T',' ');}
 
-  const labels = entries.map(e => e[0]);
-  const data = entries.map(e => e[1]);
-
-  // Sell markers within range
-  const minDate = labels[0];
-  const maxDate = labels[labels.length - 1];
-  const filteredSells = sells.filter(s => s.date >= minDate && s.date <= maxDate);
-
-  // Find nearest balance for each sell event
-  const sellPoints = filteredSells.map(s => {
-    const idx = labels.findIndex(l => l >= s.date);
-    return {
-      x: s.date,
-      y: idx >= 0 ? data[idx] : data[data.length - 1],
-      amount: s.amount_eth,
-      exchange: s.exchange,
-      type: s.type
-    };
+  // Time range buttons
+  document.querySelectorAll('#timeRange .tf-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('#timeRange .tf-tab').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentRange=parseInt(btn.dataset.range);
+      renderChart();
+    });
   });
 
-  if (balanceChart) balanceChart.destroy();
-
-  const ctx = document.getElementById('balanceChart').getContext('2d');
-  balanceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'ETH 잔액',
-          data,
-          borderColor: colors.main,
-          backgroundColor: colors.bg,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          borderWidth: 2
-        },
-        {
-          label: '매도 이벤트',
-          data: sellPoints.map(s => ({ x: s.x, y: s.y })),
-          type: 'scatter',
-          backgroundColor: colors.sell,
-          borderColor: '#fff',
-          borderWidth: 1.5,
-          pointRadius: 7,
-          pointHoverRadius: 10,
-          pointStyle: 'triangle',
-          rotation: 180,
-          showLine: false
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'nearest', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1a2236',
-          borderColor: '#2d3a4f',
-          borderWidth: 1,
-          titleFont: { family: 'JetBrains Mono' },
-          bodyFont: { family: 'JetBrains Mono', size: 12 },
-          callbacks: {
-            label(ctx) {
-              if (ctx.datasetIndex === 1) {
-                const sp = sellPoints[ctx.dataIndex];
-                if (!sp) return '';
-                const label = sp.exchange || (sp.type === 'large_outflow' ? '대량 전송' : '전송');
-                return `매도: ${formatETH(sp.amount)} ETH → ${label}`;
-              }
-              return `잔액: ${formatETH(ctx.parsed.y)} ETH`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'category',
-          grid: { color: 'rgba(30,42,58,0.5)' },
-          ticks: {
-            color: '#4a5568',
-            font: { family: 'JetBrains Mono', size: 11 },
-            maxTicksLimit: 10,
-            maxRotation: 0
-          }
-        },
-        y: {
-          grid: { color: 'rgba(30,42,58,0.5)' },
-          ticks: {
-            color: '#4a5568',
-            font: { family: 'JetBrains Mono', size: 11 },
-            callback: v => formatETH(v)
-          }
-        }
-      }
-    }
-  });
-
-  // Update chart title
-  const titles = { vitalik: '📊 Vitalik ETH 잔액 추이', ef: '📊 이더리움 재단 ETH 잔액 추이' };
-  document.getElementById('chartTitle').textContent = titles[currentTab];
-}
-
-function renderUsdChart() {
-  const group = walletData.groups[currentTab];
-  const balances = group.daily_balances;
-  const prices = walletData.eth_prices || {};
-  const colors = COLORS[currentTab];
-
-  let entries = Object.entries(balances).sort((a,b) => a[0].localeCompare(b[0]));
-  entries = filterByRange(entries);
-
-  const labels = [];
-  const usdValues = [];
-
-  for (const [date, bal] of entries) {
-    const price = findNearestPrice(date, prices);
-    if (price > 0) {
-      labels.push(date);
-      usdValues.push(Math.round(bal * price));
-    }
-  }
-
-  if (usdChart) usdChart.destroy();
-
-  const ctx = document.getElementById('usdChart').getContext('2d');
-  usdChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'USD 가치',
-        data: usdValues,
-        borderColor: colors.main,
-        backgroundColor: colors.bg,
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'nearest', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1a2236',
-          borderColor: '#2d3a4f',
-          borderWidth: 1,
-          titleFont: { family: 'JetBrains Mono' },
-          bodyFont: { family: 'JetBrains Mono', size: 12 },
-          callbacks: {
-            label: ctx => `$${formatUSD(ctx.parsed.y)}`
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'category',
-          grid: { color: 'rgba(30,42,58,0.5)' },
-          ticks: {
-            color: '#4a5568',
-            font: { family: 'JetBrains Mono', size: 11 },
-            maxTicksLimit: 10,
-            maxRotation: 0
-          }
-        },
-        y: {
-          grid: { color: 'rgba(30,42,58,0.5)' },
-          ticks: {
-            color: '#4a5568',
-            font: { family: 'JetBrains Mono', size: 11 },
-            callback: v => '$' + formatUSD(v)
-          }
-        }
-      }
-    }
-  });
-
-  const titles = { vitalik: '💰 Vitalik 보유 ETH의 USD 가치', ef: '💰 이더리움 재단 보유 ETH의 USD 가치' };
-  document.getElementById('usdChartTitle').textContent = titles[currentTab];
-}
-
-function renderSellTable() {
-  const group = walletData.groups[currentTab];
-  const sells = (group.sell_events || []).sort((a,b) => b.date.localeCompare(a.date));
-  const tbody = document.getElementById('sellTableBody');
-
-  const titles = { vitalik: '🔴 Vitalik 매도 / 대량 전송 내역', ef: '🔴 이더리움 재단 매도 / 대량 전송 내역' };
-  document.getElementById('sellTableTitle').textContent = titles[currentTab];
-
-  if (!sells.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">데이터 없음</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = sells.slice(0, 30).map(s => {
-    const typeLabel = s.type === 'exchange_sell'
-      ? '<span class="sell-badge exchange">거래소 매도</span>'
-      : '<span class="sell-badge outflow">대량 전송</span>';
-    const dest = s.exchange || (s.to ? s.to.slice(0, 10) + '...' : '—');
-    return `<tr>
-      <td>${s.date}</td>
-      <td style="color:var(--accent-sell)">-${formatETH(s.amount_eth)} ETH</td>
-      <td>${typeLabel}</td>
-      <td>${dest}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ============================================================
-// HELPERS
-// ============================================================
-function formatETH(val) {
-  if (val >= 1000000) return (val / 1000000).toFixed(2) + 'M';
-  if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
-  return val.toFixed(2);
-}
-
-function formatUSD(val) {
-  if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
-  if (val >= 1e6) return (val / 1e6).toFixed(1) + 'M';
-  if (val >= 1e3) return (val / 1e3).toFixed(1) + 'K';
-  return val.toFixed(0);
-}
-
-function findNearestPrice(date, prices) {
-  if (prices[date]) return prices[date];
-  const sorted = Object.keys(prices).sort();
-  let nearest = null;
-  for (const d of sorted) {
-    if (d <= date) nearest = d;
-    else break;
-  }
-  return nearest ? prices[nearest] : 0;
-}
-
-function filterByRange(entries) {
-  if (currentRange === 'all') return entries;
-  const now = new Date();
-  let cutoff;
-  if (currentRange === '1y') {
-    cutoff = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-  } else if (currentRange === '3y') {
-    cutoff = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
-  }
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
-  return entries.filter(e => e[0] >= cutoffStr);
-}
-
-// ============================================================
-// INTERACTIONS
-// ============================================================
-function switchTab(tab, btn) {
-  currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
   renderAll();
 }
 
-function setRange(range, btn) {
-  currentRange = range;
-  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderBalanceChart();
-  renderUsdChart();
+function renderAll(){
+  renderSummary();
+  renderChart();
+  renderTable();
+  renderWallets();
+  makeInlineShare(document.getElementById('inlineShare1'));
+  makeInlineShare(document.getElementById('inlineShare2'));
+  sendHeight();
 }
 
-// ============================================================
-// INIT
-// ============================================================
+/* ===== SUMMARY ===== */
+function renderSummary(){
+  var vBal=getLatestBalance('vitalik');
+  var eBal=getLatestBalance('ef');
+  var ps=getPriceSeries();
+  var latestPrice=ps.prices.length?ps.prices[ps.prices.length-1]:0;
+  document.getElementById('vBal').textContent=fmtETH(vBal)+' ETH';
+  document.getElementById('eBal').textContent=fmtETH(eBal)+' ETH';
+  document.getElementById('vUsd').textContent=latestPrice?'≈ '+fmtUSD(vBal*latestPrice):'';
+  document.getElementById('eUsd').textContent=latestPrice?'≈ '+fmtUSD(eBal*latestPrice):'';
+}
+
+/* ===== FILTER ===== */
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderChart();
+  renderTable();
+}
+
+/* ===== MAIN CHART ===== */
+function renderChart(){
+  var ps=getPriceSeries();
+  var dates=ps.dates.slice(),prices=ps.prices.slice();
+
+  // Apply range
+  if(currentRange>0){
+    dates=dates.slice(-currentRange);
+    prices=prices.slice(-currentRange);
+  }
+
+  var events=getSellEvents(currentFilter);
+  var minDate=dates[0],maxDate=dates[dates.length-1];
+  var filtered=events.filter(function(e){return e.date>=minDate&&e.date<=maxDate;});
+
+  // Split into vitalik / ef
+  var vSells=[],eSells=[];
+  filtered.forEach(function(e){
+    var price=findPrice(e.date);
+    var point={x:e.date,y:price,amount:e.amount_eth,exchange:e.exchange,type:e.type,to:e.to,usd:Math.round(e.amount_eth*price)};
+    if(e.group==='vitalik')vSells.push(point);
+    else eSells.push(point);
+  });
+
+  // Marker size based on amount
+  function markerSize(sells){
+    if(!sells.length)return[];
+    var max=Math.max.apply(null,sells.map(function(s){return s.amount;}));
+    return sells.map(function(s){return Math.max(5,Math.min(18,s.amount/max*18));});
+  }
+
+  if(mainChart)mainChart.destroy();
+  var ctx=document.getElementById('mainChart').getContext('2d');
+  var grad=ctx.createLinearGradient(0,0,0,360);
+  grad.addColorStop(0,'rgba(59,130,246,0.1)');grad.addColorStop(1,'rgba(59,130,246,0)');
+
+  mainChart=new Chart(ctx,{type:'line',plugins:[watermarkPlugin],data:{
+    labels:dates,
+    datasets:[
+      {label:'ETH',data:prices,borderColor:'#3b82f6',backgroundColor:grad,fill:true,borderWidth:1.5,pointRadius:0,tension:0.1,yAxisID:'y',order:2},
+      {label:'Vitalik 매도',data:vSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(99,102,241,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(vSells),pointHoverRadius:markerSize(vSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1},
+      {label:'EF 매도',data:eSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(245,158,11,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(eSells),pointHoverRadius:markerSize(eSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1}
+    ]
+  },options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{intersect:false,mode:'nearest'},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'rgba(10,10,10,0.95)',titleColor:'#e5e5e5',bodyColor:'#8a8a8a',
+        borderColor:'rgba(255,255,255,0.08)',borderWidth:1,padding:14,cornerRadius:8,
+        titleFont:{family:"'JetBrains Mono',monospace",size:11},
+        bodyFont:{family:"'JetBrains Mono',monospace",size:11},
+        callbacks:{
+          title:function(items){return items[0]?.label||items[0]?.raw?.x||'';},
+          label:function(ctx){
+            if(ctx.datasetIndex===0)return'ETH: $'+ctx.parsed.y.toLocaleString();
+            var sells=ctx.datasetIndex===1?vSells:eSells;
+            var s=sells[ctx.dataIndex];
+            if(!s)return'';
+            var who=ctx.datasetIndex===1?'Vitalik':'EF';
+            var lines=[who+': -'+fmtETH(s.amount)+' ETH','가격: $'+s.y.toLocaleString(),'환산: '+fmtUSD(s.usd)];
+            if(s.exchange)lines.push('거래소: '+s.exchange);
+            else if(s.to)lines.push('대상: '+s.to);
+            return lines;
+          }
+        }
+      }
+    },
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#555',font:{family:"'JetBrains Mono',monospace",size:10},maxTicksLimit:8,maxRotation:0}},
+      y:{position:'right',grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#555',font:{family:"'JetBrains Mono',monospace",size:10},callback:function(v){return'$'+v.toLocaleString();}}}
+    }
+  }});
+
+  // Update title
+  var label=currentFilter==='exchange'?'거래소 매도':'대량 전송 전체';
+  document.getElementById('chartTitle').textContent='ETH 가격 · '+label+' 시점';
+}
+
+/* ===== TABLE ===== */
+function renderTable(){
+  var events=getSellEvents(currentFilter);
+  events.reverse(); // newest first
+  var label=currentFilter==='exchange'?'거래소 매도 내역':'대량 전송 전체 내역';
+  document.getElementById('tableTitle').textContent=label;
+  document.getElementById('tableCount').textContent=events.length+'건';
+
+  var tbody=document.getElementById('sellTableBody');
+  if(!events.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--hv-text-muted);padding:24px">데이터 없음</td></tr>';return;}
+
+  tbody.innerHTML=events.slice(0,50).map(function(e){
+    var price=findPrice(e.date);
+    var usd=Math.round(e.amount_eth*price);
+    var whoBadge=e.group==='vitalik'?'<span class="sell-badge vitalik">Vitalik</span>':'<span class="sell-badge ef">EF</span>';
+    var typeBadge=e.type==='exchange_sell'?'<span class="sell-badge exchange">거래소</span>':'<span class="sell-badge outflow">전송</span>';
+    var dest=e.exchange||(e.to?e.to.toString().slice(0,12)+'...':'—');
+    return'<tr><td>'+e.date+'</td><td>'+whoBadge+'</td><td style="color:var(--cl-sell)">-'+fmtETH(e.amount_eth)+'</td><td>$'+price.toLocaleString()+'</td><td>'+fmtUSD(usd)+'</td><td>'+typeBadge+'</td><td style="color:var(--hv-text-tertiary)">'+dest+'</td></tr>';
+  }).join('');
+}
+
+/* ===== WALLETS ===== */
+function renderWallets(){
+  document.getElementById('walletList').innerHTML=WALLETS.map(function(w){
+    var color=w.group==='vitalik'?'var(--cl-vitalik)':'var(--cl-ef)';
+    var short=w.addr.slice(0,8)+'...'+w.addr.slice(-4);
+    return'<div class="wallet-item"><div><div class="wallet-label" style="color:'+color+'">'+w.label+'</div><div class="wallet-addr"><a href="https://etherscan.io/address/'+w.addr+'" target="_blank">'+short+'</a></div></div></div>';
+  }).join('');
+}
+
+/* ===== IFRAME RESIZE ===== */
+var _lastH=0,_ht;
+function sendHeight(){clearTimeout(_ht);_ht=setTimeout(function(){var h=document.body.offsetHeight;if(Math.abs(h-_lastH)>5){_lastH=h;window.parent.postMessage({type:'resize',height:h},'*');}},150);}
+window.addEventListener('message',function(e){if(e.data&&e.data.type==='requestResize'){_lastH=0;sendHeight();}});
+
+/* ===== BOOT ===== */
 loadData();
+sendHeight();window.addEventListener('resize',sendHeight);new MutationObserver(sendHeight).observe(document.body,{childList:true,subtree:true});
+var resizeTimer;window.addEventListener('resize',function(){clearTimeout(resizeTimer);resizeTimer=setTimeout(function(){if(DATA)renderChart();},250);});
 </script>
 </body>
 </html>
