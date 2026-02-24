@@ -72,7 +72,7 @@
 
   <!-- DISCLAIMER -->
   <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:var(--hv-radius-md);padding:10px var(--hv-space-lg);margin-bottom:var(--hv-space-lg);font-size:.75rem;color:var(--hv-text-secondary);line-height:1.7">
-    ℹ️ 본 대시보드는 <strong style="color:var(--hv-text-primary)">공개적으로 알려진 지갑 주소</strong>만을 추적합니다. Etherscan 태그, 온체인 분석(Arkham 등), 본인 공개 등으로 확인된 주소이며, 실제 보유량은 비공개 지갑을 통해 더 많을 수 있습니다. 투자 판단의 근거로 사용하지 마세요.
+    ℹ️ 본 대시보드는 <strong style="color:var(--hv-text-primary)">공개적으로 알려진 지갑 주소</strong>의 10 ETH 이상 대량 전송(거래소, DEX, 외부 지갑 등)을 추적합니다. Etherscan 태그, 온체인 분석(Arkham 등), 본인 공개 등으로 확인된 주소이며, 실제 보유량은 비공개 지갑을 통해 더 많을 수 있습니다. 투자 판단의 근거로 사용하지 마세요.
   </div>
 
   <!-- SUMMARY -->
@@ -90,15 +90,12 @@
   </div>
 
   <!-- FILTER -->
-  <div class="filter-tabs" id="filterTabs">
-    <button class="filter-tab active" data-filter="exchange" onclick="setFilter('exchange',this)">🔴 거래소 매도</button>
-    <button class="filter-tab" data-filter="all" onclick="setFilter('all',this)">📤 대량 전송 전체</button>
-  </div>
+  <!-- Filter removed - show all large outflows -->
 
   <!-- MAIN CHART: ETH PRICE + SELL MARKERS -->
   <div class="hv-card">
     <div class="hv-card-head">
-      <h2 id="chartTitle">ETH 가격 · 매도 시점</h2>
+      <h2 id="chartTitle">ETH 가격 · 대량 전송 시점</h2>
       <div class="tf-tabs" id="timeRange">
         <button class="tf-tab" data-range="90">3M</button>
         <button class="tf-tab" data-range="365">1Y</button>
@@ -118,7 +115,7 @@
   <!-- SELL TABLE -->
   <div class="hv-card">
     <div class="hv-card-head">
-      <h2 id="tableTitle">매도 내역</h2>
+      <h2 id="tableTitle">대량 전송 내역</h2>
       <span style="font-family:var(--hv-font-mono);font-size:.68rem;color:var(--hv-text-muted)" id="tableCount"></span>
     </div>
     <div class="hv-card-body" style="padding:0;overflow-x:auto">
@@ -166,7 +163,7 @@ function makeInlineShare(el){if(!el)return;el.innerHTML='<span class="lbl">공�
 function ensureKakao(){try{if(typeof Kakao!=='undefined'&&!Kakao.isInitialized())Kakao.init('a43ed7b39fac35458f4f9df925a279b5');return typeof Kakao!=='undefined'&&Kakao.isInitialized();}catch(e){return false;}}
 ensureKakao();
 
-function kakaoShare(){if(!ensureKakao()){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');return;}try{Kakao.Share.sendDefault({objectType:'feed',content:{title:'🐋 ETH 고래 지갑 추적',description:'비탈릭 & 이더리움 재단 지갑 매도 시점 · ETH 가격 차트',imageUrl:'https://raw.githubusercontent.com/kittycapital/kittycapital.github.io/main/assets/herdvibe-og.png',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}},buttons:[{title:'대시보드 보기',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}}]});}catch(e){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');}}
+function kakaoShare(){if(!ensureKakao()){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');return;}try{Kakao.Share.sendDefault({objectType:'feed',content:{title:'🐋 ETH 고래 지갑 추적',description:'비탈릭 부테린 & 이더리움 파운데이션 지갑 대량 전송 추적 · ETH 가격 차트',imageUrl:'https://raw.githubusercontent.com/kittycapital/kittycapital.github.io/main/assets/herdvibe-og.png',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}},buttons:[{title:'대시보드 보기',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}}]});}catch(e){copyToClipboard(SHARE_URL);toast('링크 복사완료! 카카오톡에 붙여넣기 하세요');}}
 
 function copyToClipboard(t){try{window.parent.postMessage({type:'clipboard',text:t},'*');}catch(e){}try{navigator.clipboard.writeText(t);}catch(e){}}
 
@@ -183,7 +180,6 @@ var watermarkPlugin={id:'herdvibeWatermark',beforeDraw:function(chart){var ctx=c
 
 /* ===== STATE ===== */
 var DATA=null,mainChart=null;
-var currentFilter='exchange';
 var currentRange=0;
 Chart.defaults.color='#555';Chart.defaults.borderColor='rgba(255,255,255,0.06)';Chart.defaults.font.family="'Noto Sans KR',sans-serif";
 
@@ -192,6 +188,7 @@ var WALLETS=[
   {id:'vitalik_main',label:'Vitalik (vitalik.eth)',addr:'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',group:'vitalik'},
   {id:'vitalik_vb',label:'Vitalik (Vb)',addr:'0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',group:'vitalik'},
   {id:'vitalik_vb3',label:'Vitalik (Vb3)',addr:'0x220866B1A2219f40e72f5c628B65D54268Ca3A9D',group:'vitalik'},
+  {id:'vitalik_safe',label:'Vitalik (Gnosis Safe)',addr:'0xfEB016D0D14AC0Fa6d69199608B0776d007203B2',group:'vitalik'},
   {id:'ef_multisig',label:'Ethereum Foundation (Multisig)',addr:'0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',group:'ef'},
   {id:'ef_1',label:'Ethereum Foundation (EF 1)',addr:'0x5eD8Cee6b63b1c6AFce3AD7c92f4fD7E1B8fAd9F',group:'ef'},
   {id:'ef_ens',label:'Ethereum Foundation (ENS)',addr:'0x561b0145d8f5221995bc6A787D8D70Db0604b7B8',group:'ef'}
@@ -256,31 +253,31 @@ function generateSample(){
   return{
     groups:{
       vitalik:{daily_balances:vBal,sell_events:[
-        {date:'2017-12-15',amount_eth:30000,exchange:'Coinbase',type:'exchange_sell',timestamp:1513296000},
-        {date:'2018-02-10',amount_eth:20000,exchange:'Kraken',type:'exchange_sell',timestamp:1518220800},
-        {date:'2018-05-20',amount_eth:15000,exchange:'Binance',type:'exchange_sell',timestamp:1526774400},
+        {date:'2017-12-15',amount_eth:30000,exchange:'Coinbase',type:'known_dest',timestamp:1513296000},
+        {date:'2018-02-10',amount_eth:20000,exchange:'Kraken',type:'known_dest',timestamp:1518220800},
+        {date:'2018-05-20',amount_eth:15000,exchange:'Binance',type:'known_dest',timestamp:1526774400},
         {date:'2021-05-12',amount_eth:80000,exchange:null,type:'large_outflow',to:'India Covid Relief',timestamp:1620777600},
-        {date:'2023-08-15',amount_eth:5000,exchange:'Coinbase',type:'exchange_sell',timestamp:1692057600},
-        {date:'2024-03-15',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1710460800},
+        {date:'2023-08-15',amount_eth:5000,exchange:'CoW Protocol',type:'known_dest',timestamp:1692057600},
+        {date:'2024-03-15',amount_eth:10000,exchange:'CoW Protocol',type:'known_dest',timestamp:1710460800},
         {date:'2024-07-22',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1721606400},
-        {date:'2024-11-05',amount_eth:12000,exchange:'Kraken',type:'exchange_sell',timestamp:1730764800},
-        {date:'2025-04-10',amount_eth:10000,exchange:'Coinbase',type:'exchange_sell',timestamp:1744243200},
+        {date:'2024-11-05',amount_eth:12000,exchange:'CoW Protocol',type:'known_dest',timestamp:1730764800},
+        {date:'2025-04-10',amount_eth:10000,exchange:'CoW Protocol',type:'known_dest',timestamp:1744243200},
         {date:'2025-09-20',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1758326400},
-        {date:'2026-01-15',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1768435200}
+        {date:'2026-01-15',amount_eth:10000,exchange:'CoW Protocol',type:'known_dest',timestamp:1768435200}
       ]},
       ef:{daily_balances:eBal,sell_events:[
-        {date:'2017-12-20',amount_eth:100000,exchange:'Kraken',type:'exchange_sell',timestamp:1513728000},
-        {date:'2018-01-15',amount_eth:100000,exchange:'Kraken',type:'exchange_sell',timestamp:1515974400},
-        {date:'2018-05-01',amount_eth:75000,exchange:'Kraken',type:'exchange_sell',timestamp:1525132800},
-        {date:'2019-03-10',amount_eth:50000,exchange:'Kraken',type:'exchange_sell',timestamp:1552176000},
-        {date:'2020-06-15',amount_eth:35000,exchange:'Kraken',type:'exchange_sell',timestamp:1592179200},
-        {date:'2022-06-10',amount_eth:20000,exchange:'Kraken',type:'exchange_sell',timestamp:1654819200},
-        {date:'2023-05-08',amount_eth:15000,exchange:'Coinbase',type:'exchange_sell',timestamp:1683504000},
-        {date:'2023-09-10',amount_eth:10000,exchange:'Kraken',type:'exchange_sell',timestamp:1694304000},
-        {date:'2024-01-20',amount_eth:10000,exchange:'Bitstamp',type:'exchange_sell',timestamp:1705708800},
+        {date:'2017-12-20',amount_eth:100000,exchange:'Kraken',type:'known_dest',timestamp:1513728000},
+        {date:'2018-01-15',amount_eth:100000,exchange:'Kraken',type:'known_dest',timestamp:1515974400},
+        {date:'2018-05-01',amount_eth:75000,exchange:'Kraken',type:'known_dest',timestamp:1525132800},
+        {date:'2019-03-10',amount_eth:50000,exchange:'Kraken',type:'known_dest',timestamp:1552176000},
+        {date:'2020-06-15',amount_eth:35000,exchange:'Kraken',type:'known_dest',timestamp:1592179200},
+        {date:'2022-06-10',amount_eth:20000,exchange:'Kraken',type:'known_dest',timestamp:1654819200},
+        {date:'2023-05-08',amount_eth:15000,exchange:'Coinbase',type:'known_dest',timestamp:1683504000},
+        {date:'2023-09-10',amount_eth:10000,exchange:'Kraken',type:'known_dest',timestamp:1694304000},
+        {date:'2024-01-20',amount_eth:10000,exchange:'Bitstamp',type:'known_dest',timestamp:1705708800},
         {date:'2024-10-15',amount_eth:8000,exchange:null,type:'large_outflow',timestamp:1728950400},
-        {date:'2025-02-10',amount_eth:15000,exchange:'Kraken',type:'exchange_sell',timestamp:1739145600},
-        {date:'2025-08-01',amount_eth:12000,exchange:'Coinbase',type:'exchange_sell',timestamp:1753977600}
+        {date:'2025-02-10',amount_eth:15000,exchange:'Kraken',type:'known_dest',timestamp:1739145600},
+        {date:'2025-08-01',amount_eth:12000,exchange:'Coinbase',type:'known_dest',timestamp:1753977600}
       ]}
     },
     eth_prices:{},
@@ -315,12 +312,11 @@ function getLatestBalance(group){
   return keys.length?bals[keys[keys.length-1]]:0;
 }
 
-function getSellEvents(filter){
+function getSellEvents(){
   var events=[];
   ['vitalik','ef'].forEach(function(g){
     var sells=DATA.groups[g]?.sell_events||[];
     sells.forEach(function(s){
-      if(filter==='exchange'&&s.type!=='exchange_sell')return;
       events.push(Object.assign({},s,{group:g}));
     });
   });
@@ -369,14 +365,6 @@ function renderSummary(){
 }
 
 /* ===== FILTER ===== */
-function setFilter(f,btn){
-  currentFilter=f;
-  document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  renderChart();
-  renderTable();
-}
-
 /* ===== MAIN CHART ===== */
 function renderChart(){
   var ps=getPriceSeries();
@@ -388,7 +376,7 @@ function renderChart(){
     prices=prices.slice(-currentRange);
   }
 
-  var events=getSellEvents(currentFilter);
+  var events=getSellEvents();
   var minDate=dates[0],maxDate=dates[dates.length-1];
   var filtered=events.filter(function(e){return e.date>=minDate&&e.date<=maxDate;});
 
@@ -417,8 +405,8 @@ function renderChart(){
     labels:dates,
     datasets:[
       {label:'ETH',data:prices,borderColor:'#3b82f6',backgroundColor:grad,fill:true,borderWidth:1.5,pointRadius:0,tension:0.1,yAxisID:'y',order:2},
-      {label:'Vitalik 매도',data:vSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(99,102,241,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(vSells),pointHoverRadius:markerSize(vSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1},
-      {label:'EF 매도',data:eSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(245,158,11,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(eSells),pointHoverRadius:markerSize(eSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1}
+      {label:'비탈릭 전송',data:vSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(129,140,248,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(vSells),pointHoverRadius:markerSize(vSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1},
+      {label:'EF 전송',data:eSells.map(function(s){return{x:s.x,y:s.y};}),type:'scatter',backgroundColor:'rgba(251,191,36,0.9)',borderColor:'#fff',borderWidth:1,pointRadius:markerSize(eSells),pointHoverRadius:markerSize(eSells).map(function(r){return r+3;}),pointStyle:'triangle',rotation:180,showLine:false,yAxisID:'y',order:1}
     ]
   },options:{
     responsive:true,maintainAspectRatio:false,
@@ -439,7 +427,7 @@ function renderChart(){
             if(!s)return'';
             var who=ctx.datasetIndex===1?'비탈릭 부테린':'이더리움 파운데이션';
             var lines=[who+': -'+fmtETH(s.amount)+' ETH','가격: $'+s.y.toLocaleString(),'환산: '+fmtUSD(s.usd)];
-            if(s.exchange)lines.push('거래소: '+s.exchange);
+            if(s.exchange)lines.push('대상: '+s.exchange);
             else if(s.to)lines.push('대상: '+s.to);
             return lines;
           }
@@ -453,15 +441,15 @@ function renderChart(){
   }});
 
   // Update title
-  var label=currentFilter==='exchange'?'거래소 매도':'대량 전송 전체';
+  var label='대량 전송';
   document.getElementById('chartTitle').textContent='ETH 가격 · '+label+' 시점';
 }
 
 /* ===== TABLE ===== */
 function renderTable(){
-  var events=getSellEvents(currentFilter);
+  var events=getSellEvents();
   events.reverse(); // newest first
-  var label=currentFilter==='exchange'?'거래소 매도 내역':'대량 전송 전체 내역';
+  var label='대량 전송 내역';
   document.getElementById('tableTitle').textContent=label;
   document.getElementById('tableCount').textContent=events.length+'건';
 
@@ -472,7 +460,7 @@ function renderTable(){
     var price=findPrice(e.date);
     var usd=Math.round(e.amount_eth*price);
     var whoBadge=e.group==='vitalik'?'<span class="sell-badge vitalik">비탈릭</span>':'<span class="sell-badge ef">이더리움 파운데이션</span>';
-    var typeBadge=e.type==='exchange_sell'?'<span class="sell-badge exchange">거래소</span>':'<span class="sell-badge outflow">전송</span>';
+    var typeBadge=e.exchange?'<span class="sell-badge exchange">'+e.exchange+'</span>':'<span class="sell-badge outflow">전송</span>';
     var dest=e.exchange||(e.to?e.to.toString().slice(0,12)+'...':'—');
     return'<tr><td>'+e.date+'</td><td>'+whoBadge+'</td><td style="color:var(--cl-sell)">-'+fmtETH(e.amount_eth)+'</td><td>$'+price.toLocaleString()+'</td><td>'+fmtUSD(usd)+'</td><td>'+typeBadge+'</td><td style="color:var(--hv-text-tertiary)">'+dest+'</td></tr>';
   }).join('');
