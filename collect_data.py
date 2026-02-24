@@ -1,0 +1,426 @@
+"""
+Ethereum Wallet Tracker - Data Collection Script
+Fetches full transaction history from Etherscan API and calculates running balance.
+Usage:
+  Initial:  python collect_data.py --full
+  Daily:    python collect_data.py --update
+"""
+
+import requests
+import json
+import time
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ============================================================
+# CONFIG
+# ============================================================
+ETHERSCAN_API_KEY = os.environ.get("ETHERSCAN_API_KEY", "YourApiKeyToken")
+BASE_URL = "https://api.etherscan.io/api"
+DATA_DIR = Path("data")
+RATE_LIMIT_DELAY = 0.25  # 4 req/sec (stay under 5/sec free limit)
+
+WALLETS = {
+    "vitalik_main": {
+        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "label": "Vitalik (vitalik.eth)",
+        "group": "vitalik"
+    },
+    "vitalik_vb": {
+        "address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B",
+        "label": "Vitalik (Vb)",
+        "group": "vitalik"
+    },
+    "vitalik_vb3": {
+        "address": "0x220866B1A2219f40e72f5c628B65D54268Ca3A9D",
+        "label": "Vitalik (Vb3)",
+        "group": "vitalik"
+    },
+    "ef_multisig": {
+        "address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+        "label": "Ethereum Foundation (Multisig)",
+        "group": "ef"
+    },
+    "ef_1": {
+        "address": "0x5eD8Cee6b63b1c6AFce3AD7c92f4fD7E1B8fAd9F",
+        "label": "Ethereum Foundation (EF 1)",
+        "group": "ef"
+    },
+    "ef_ens": {
+        "address": "0x561b0145d8f5221995bc6A787D8D70Db0604b7B8",
+        "label": "Ethereum Foundation (ENS)",
+        "group": "ef"
+    }
+}
+
+# Known exchange deposit addresses (for sell detection)
+EXCHANGE_ADDRESSES = {
+    "0x28c6c06298d514db089934071355e5743bf21d60": "Binance",
+    "0x21a31ee1afc51d94c2efccaa2092ad1028285549": "Binance",
+    "0xdfd5293d8e347dfe59e90efd55b2956a1343963d": "Binance",
+    "0x56eddb7aa87536c09ccc2793473599fd21a8b17f": "Binance",
+    "0x9696f59e4d72e237be84ffd425dcad154bf96976": "Binance",
+    "0x4976a4a02f38326660d17bf34b431dc6e2eb2327": "Binance",
+    "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0": "Kraken",
+    "0xae2d4617c862309a3d75a0ffb358c7a5009c673f": "Kraken",
+    "0x0a869d79a7052c7f1b55a8ebabbea3420f0d1e13": "Kraken",
+    "0xe853c56864a2ebe4576a807d26fdc4a0ada51919": "Kraken",
+    "0x2910543af39aba0cd09dbb2d50200b3e800a63d2": "Kraken",
+    "0xdc76cd25977e0a5ae17155770273ad58648900d3": "Coinbase",
+    "0x503828976d22510aad0201ac7ec88293211d23da": "Coinbase",
+    "0x71660c4005ba85c37ccec55d0c4493e66fe775d3": "Coinbase",
+    "0xa090e606e30bd747d4e6245a1517ebe430f0057e": "Coinbase",
+    "0x77134cbc06cb00b66f4c7e623d5fdbf6777635ec": "Coinbase",
+}
+
+
+def etherscan_get(params, retries=3):
+    """Make Etherscan API call with rate limiting and retries."""
+    params["apikey"] = ETHERSCAN_API_KEY
+    for attempt in range(retries):
+        try:
+            time.sleep(RATE_LIMIT_DELAY)
+            resp = requests.get(BASE_URL, params=params, timeout=30)
+            data = resp.json()
+            if data.get("status") == "1" or data.get("message") == "No transactions found":
+                return data.get("result", [])
+            if "rate limit" in str(data.get("message", "")).lower():
+                print(f"  Rate limited, waiting 2s...")
+                time.sleep(2)
+                continue
+            print(f"  API warning: {data.get('message', 'unknown')}")
+            return data.get("result", [])
+        except Exception as e:
+            print(f"  Request error (attempt {attempt+1}): {e}")
+            time.sleep(2)
+    return []
+
+
+def fetch_all_transactions(address, start_block=0):
+    """Fetch all normal + internal transactions for an address (paginated)."""
+    all_txs = []
+
+    # Normal transactions
+    print(f"  Fetching normal transactions from block {start_block}...")
+    page = 1
+    while True:
+        txs = etherscan_get({
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "startblock": start_block,
+            "endblock": 99999999,
+            "page": page,
+            "offset": 10000,
+            "sort": "asc"
+        })
+        if not txs or not isinstance(txs, list):
+            break
+        for tx in txs:
+            tx["_type"] = "normal"
+        all_txs.extend(txs)
+        print(f"    Page {page}: {len(txs)} txs (total: {len(all_txs)})")
+        if len(txs) < 10000:
+            break
+        page += 1
+
+    # Internal transactions
+    print(f"  Fetching internal transactions from block {start_block}...")
+    page = 1
+    while True:
+        txs = etherscan_get({
+            "module": "account",
+            "action": "txlistinternal",
+            "address": address,
+            "startblock": start_block,
+            "endblock": 99999999,
+            "page": page,
+            "offset": 10000,
+            "sort": "asc"
+        })
+        if not txs or not isinstance(txs, list):
+            break
+        for tx in txs:
+            tx["_type"] = "internal"
+        all_txs.extend(txs)
+        print(f"    Page {page}: {len(txs)} internal txs")
+        if len(txs) < 10000:
+            break
+        page += 1
+
+    # Sort by timestamp
+    all_txs.sort(key=lambda x: int(x.get("timeStamp", 0)))
+    return all_txs
+
+
+def process_transactions(address, txs):
+    """
+    Process transactions to calculate:
+    - Running ETH balance over time (daily snapshots)
+    - Sell events (large outflows to exchanges or large outflows in general)
+    """
+    address_lower = address.lower()
+    balance_wei = 0
+    daily_balances = {}  # date_str -> balance_eth
+    sell_events = []
+
+    for tx in txs:
+        ts = int(tx.get("timeStamp", 0))
+        value_wei = int(tx.get("value", 0))
+        from_addr = tx.get("from", "").lower()
+        to_addr = tx.get("to", "").lower()
+        is_error = tx.get("isError", "0") == "1"
+
+        if is_error and tx.get("_type") == "normal":
+            continue
+
+        # Gas cost (only for normal outgoing txs)
+        gas_cost = 0
+        if tx.get("_type") == "normal" and from_addr == address_lower:
+            gas_used = int(tx.get("gasUsed", 0))
+            gas_price = int(tx.get("gasPrice", 0))
+            gas_cost = gas_used * gas_price
+
+        # Update balance
+        if from_addr == address_lower and to_addr == address_lower:
+            # Self transfer, only gas
+            balance_wei -= gas_cost
+        elif from_addr == address_lower:
+            balance_wei -= value_wei + gas_cost
+        elif to_addr == address_lower:
+            balance_wei += value_wei
+
+        # Daily snapshot
+        date_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+        balance_eth = balance_wei / 1e18
+        daily_balances[date_str] = round(balance_eth, 4)
+
+        # Detect sell events (outgoing > 10 ETH)
+        if from_addr == address_lower and value_wei > 10 * 1e18:
+            eth_amount = value_wei / 1e18
+            exchange = EXCHANGE_ADDRESSES.get(to_addr, None)
+            sell_events.append({
+                "date": date_str,
+                "timestamp": ts,
+                "amount_eth": round(eth_amount, 4),
+                "to": to_addr,
+                "exchange": exchange,
+                "tx_hash": tx.get("hash", ""),
+                "type": "exchange_sell" if exchange else "large_outflow"
+            })
+
+    return daily_balances, sell_events
+
+
+def get_current_balance(address):
+    """Get current ETH balance from API."""
+    result = etherscan_get({
+        "module": "account",
+        "action": "balance",
+        "address": address,
+        "tag": "latest"
+    })
+    if result and isinstance(result, str):
+        return int(result) / 1e18
+    return 0
+
+
+def fetch_eth_price_history():
+    """Fetch ETH price history from CoinGecko (free, no key needed)."""
+    print("Fetching ETH price history from CoinGecko...")
+    try:
+        # max days for free tier
+        url = "https://api.coingecko.com/api/v3/coins/ethereum/market_chart"
+        params = {"vs_currency": "usd", "days": "max", "interval": "daily"}
+        resp = requests.get(url, params=params, timeout=30)
+        data = resp.json()
+        prices = {}
+        for ts_ms, price in data.get("prices", []):
+            date_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+            prices[date_str] = round(price, 2)
+        print(f"  Got {len(prices)} daily prices")
+        return prices
+    except Exception as e:
+        print(f"  Failed to fetch prices: {e}")
+        return {}
+
+
+def run_full_collection():
+    """Initial full data collection for all wallets."""
+    DATA_DIR.mkdir(exist_ok=True)
+    all_data = {}
+
+    for wallet_id, wallet_info in WALLETS.items():
+        address = wallet_info["address"]
+        print(f"\n{'='*60}")
+        print(f"Processing: {wallet_info['label']}")
+        print(f"Address: {address}")
+        print(f"{'='*60}")
+
+        txs = fetch_all_transactions(address)
+        print(f"  Total transactions: {len(txs)}")
+
+        daily_balances, sell_events = process_transactions(address, txs)
+        current_balance = get_current_balance(address)
+        print(f"  Daily snapshots: {len(daily_balances)}")
+        print(f"  Sell events (>10 ETH): {len(sell_events)}")
+        print(f"  Current balance: {current_balance:.4f} ETH")
+
+        # Get last block number for incremental updates
+        last_block = 0
+        if txs:
+            last_block = max(int(tx.get("blockNumber", 0)) for tx in txs)
+
+        all_data[wallet_id] = {
+            "info": wallet_info,
+            "daily_balances": daily_balances,
+            "sell_events": sell_events,
+            "current_balance": round(current_balance, 4),
+            "last_block": last_block,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+
+    # Fetch ETH prices
+    eth_prices = fetch_eth_price_history()
+
+    # Calculate group totals (vitalik combined, ef combined)
+    group_balances = {"vitalik": {}, "ef": {}}
+    group_sells = {"vitalik": [], "ef": []}
+
+    for wallet_id, wdata in all_data.items():
+        group = wdata["info"]["group"]
+        for date_str, bal in wdata["daily_balances"].items():
+            group_balances[group][date_str] = group_balances[group].get(date_str, 0) + bal
+        group_sells[group].extend(wdata["sell_events"])
+
+    # Round group balances
+    for group in group_balances:
+        for date_str in group_balances[group]:
+            group_balances[group][date_str] = round(group_balances[group][date_str], 4)
+
+    # Build chart data
+    chart_data = {
+        "wallets": all_data,
+        "groups": {
+            "vitalik": {
+                "daily_balances": dict(sorted(group_balances["vitalik"].items())),
+                "sell_events": sorted(group_sells["vitalik"], key=lambda x: x["timestamp"])
+            },
+            "ef": {
+                "daily_balances": dict(sorted(group_balances["ef"].items())),
+                "sell_events": sorted(group_sells["ef"], key=lambda x: x["timestamp"])
+            }
+        },
+        "eth_prices": eth_prices,
+        "metadata": {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "mode": "full"
+        }
+    }
+
+    output_path = DATA_DIR / "wallet_data.json"
+    with open(output_path, "w") as f:
+        json.dump(chart_data, f, indent=2)
+    print(f"\nData saved to {output_path}")
+    print(f"File size: {output_path.stat().st_size / 1024:.1f} KB")
+
+
+def run_update():
+    """Incremental update - fetch only new transactions since last block."""
+    data_path = DATA_DIR / "wallet_data.json"
+    if not data_path.exists():
+        print("No existing data found. Run with --full first.")
+        sys.exit(1)
+
+    with open(data_path) as f:
+        chart_data = json.load(f)
+
+    for wallet_id, wallet_info in WALLETS.items():
+        address = wallet_info["address"]
+        existing = chart_data["wallets"].get(wallet_id, {})
+        last_block = existing.get("last_block", 0)
+
+        print(f"\nUpdating: {wallet_info['label']} (from block {last_block})")
+
+        txs = fetch_all_transactions(address, start_block=last_block + 1)
+        if not txs:
+            print("  No new transactions")
+            # Still update current balance
+            current_balance = get_current_balance(address)
+            existing["current_balance"] = round(current_balance, 4)
+            existing["last_updated"] = datetime.now(timezone.utc).isoformat()
+            continue
+
+        print(f"  New transactions: {len(txs)}")
+        new_balances, new_sells = process_transactions(address, txs)
+
+        # Merge with existing data
+        existing_balances = existing.get("daily_balances", {})
+        existing_balances.update(new_balances)
+        existing["daily_balances"] = dict(sorted(existing_balances.items()))
+
+        existing_sells = existing.get("sell_events", [])
+        existing_sells.extend(new_sells)
+        existing["sell_events"] = existing_sells
+
+        new_last_block = max(int(tx.get("blockNumber", 0)) for tx in txs)
+        existing["last_block"] = max(last_block, new_last_block)
+
+        current_balance = get_current_balance(address)
+        existing["current_balance"] = round(current_balance, 4)
+        existing["last_updated"] = datetime.now(timezone.utc).isoformat()
+
+        chart_data["wallets"][wallet_id] = existing
+
+    # Recalculate group totals
+    group_balances = {"vitalik": {}, "ef": {}}
+    group_sells = {"vitalik": [], "ef": []}
+
+    for wallet_id, wdata in chart_data["wallets"].items():
+        group = wdata["info"]["group"]
+        for date_str, bal in wdata["daily_balances"].items():
+            group_balances[group][date_str] = group_balances[group].get(date_str, 0) + bal
+        group_sells[group].extend(wdata["sell_events"])
+
+    for group in group_balances:
+        for date_str in group_balances[group]:
+            group_balances[group][date_str] = round(group_balances[group][date_str], 4)
+
+    chart_data["groups"] = {
+        "vitalik": {
+            "daily_balances": dict(sorted(group_balances["vitalik"].items())),
+            "sell_events": sorted(group_sells["vitalik"], key=lambda x: x["timestamp"])
+        },
+        "ef": {
+            "daily_balances": dict(sorted(group_balances["ef"].items())),
+            "sell_events": sorted(group_sells["ef"], key=lambda x: x["timestamp"])
+        }
+    }
+
+    # Update ETH prices
+    eth_prices = fetch_eth_price_history()
+    if eth_prices:
+        existing_prices = chart_data.get("eth_prices", {})
+        existing_prices.update(eth_prices)
+        chart_data["eth_prices"] = existing_prices
+
+    chart_data["metadata"]["generated_at"] = datetime.now(timezone.utc).isoformat()
+    chart_data["metadata"]["mode"] = "update"
+
+    output_path = DATA_DIR / "wallet_data.json"
+    with open(output_path, "w") as f:
+        json.dump(chart_data, f, indent=2)
+    print(f"\nData updated: {output_path}")
+
+
+if __name__ == "__main__":
+    if "--full" in sys.argv:
+        run_full_collection()
+    elif "--update" in sys.argv:
+        run_update()
+    else:
+        print("Usage:")
+        print("  python collect_data.py --full    # Initial full collection")
+        print("  python collect_data.py --update  # Daily incremental update")
