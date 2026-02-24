@@ -468,12 +468,112 @@ def run_update():
     print(f"\nData updated: {output_path}")
 
 
+def run_repair():
+    """Repair existing data: re-apply offset correction + backfill prices from CSV."""
+    data_path = DATA_DIR / "wallet_data.json"
+    if not data_path.exists():
+        print("No existing data found. Run with --full first.")
+        sys.exit(1)
+
+    with open(data_path) as f:
+        chart_data = json.load(f)
+
+    print("=== REPAIR MODE ===")
+
+    # 1. Re-apply offset correction for every wallet
+    for wallet_id, wdata in chart_data.get("wallets", {}).items():
+        address = wdata["info"]["address"]
+        label = wdata["info"]["label"]
+        daily_balances = wdata.get("daily_balances", {})
+
+        if not daily_balances:
+            print(f"\n  {label}: no balance data, skipping")
+            continue
+
+        current_balance = get_current_balance(address)
+        sorted_dates = sorted(daily_balances.keys())
+        calculated_final = daily_balances[sorted_dates[-1]]
+        offset = current_balance - calculated_final
+
+        print(f"\n  {label}:")
+        print(f"    Actual balance:     {current_balance:.4f} ETH")
+        print(f"    Calculated final:   {calculated_final:.4f} ETH")
+        print(f"    Offset:             {offset:.4f} ETH")
+
+        if abs(offset) > 0.01:
+            for date_str in daily_balances:
+                daily_balances[date_str] = round(daily_balances[date_str] + offset, 4)
+            print(f"    ✓ Offset applied to {len(daily_balances)} snapshots")
+
+        wdata["daily_balances"] = daily_balances
+        wdata["current_balance"] = round(current_balance, 4)
+
+    # 2. Recalculate group totals
+    group_balances = {"vitalik": {}, "ef": {}}
+    group_sells = {"vitalik": [], "ef": []}
+
+    for wallet_id, wdata in chart_data["wallets"].items():
+        group = wdata["info"]["group"]
+        for date_str, bal in wdata["daily_balances"].items():
+            group_balances[group][date_str] = group_balances[group].get(date_str, 0) + bal
+        group_sells[group].extend(wdata.get("sell_events", []))
+
+    for group in group_balances:
+        for date_str in group_balances[group]:
+            group_balances[group][date_str] = round(group_balances[group][date_str], 4)
+
+    chart_data["groups"] = {
+        "vitalik": {
+            "daily_balances": dict(sorted(group_balances["vitalik"].items())),
+            "sell_events": sorted(group_sells["vitalik"], key=lambda x: x["timestamp"])
+        },
+        "ef": {
+            "daily_balances": dict(sorted(group_balances["ef"].items())),
+            "sell_events": sorted(group_sells["ef"], key=lambda x: x["timestamp"])
+        }
+    }
+
+    # Print group totals for verification
+    for g in ["vitalik", "ef"]:
+        bals = chart_data["groups"][g]["daily_balances"]
+        if bals:
+            latest = bals[sorted(bals.keys())[-1]]
+            print(f"\n  Group [{g}] latest balance: {latest:.4f} ETH")
+
+    # 3. Backfill prices from CSV
+    existing_prices = chart_data.get("eth_prices", {})
+    print(f"\n  Existing prices: {len(existing_prices)} entries")
+
+    csv_prices = load_eth_prices_from_csv()
+    if csv_prices:
+        csv_prices.update(existing_prices)  # keep existing (newer) over CSV
+        existing_prices = csv_prices
+        print(f"  After CSV backfill: {len(existing_prices)} entries")
+
+    today_price = fetch_eth_price_today()
+    if today_price:
+        existing_prices.update(today_price)
+
+    chart_data["eth_prices"] = existing_prices
+
+    chart_data["metadata"]["generated_at"] = datetime.now(timezone.utc).isoformat()
+    chart_data["metadata"]["mode"] = "repair"
+
+    output_path = DATA_DIR / "wallet_data.json"
+    with open(output_path, "w") as f:
+        json.dump(chart_data, f, indent=2)
+    print(f"\n✓ Repair complete: {output_path}")
+
+
 if __name__ == "__main__":
     if "--full" in sys.argv:
         run_full_collection()
     elif "--update" in sys.argv:
         run_update()
+    elif "--repair" in sys.argv:
+        run_repair()
     else:
         print("Usage:")
         print("  python collect_data.py --full    # Initial full collection")
         print("  python collect_data.py --update  # Daily incremental update")
+        print("  python collect_data.py --repair  # Fix balances + backfill prices")
