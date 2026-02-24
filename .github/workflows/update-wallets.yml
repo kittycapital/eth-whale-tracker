@@ -20,10 +20,17 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run update
+      - name: Run collector
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-        run: python collect_data.py --update
+        run: |
+          if [ -f data/wallet_data.json ]; then
+            echo "Existing data found. Running incremental update..."
+            python collect_data.py --update
+          else
+            echo "No existing data. Running full collection..."
+            python collect_data.py --full
+          fi
 
       - name: Commit and push
         run: |
