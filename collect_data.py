@@ -18,7 +18,7 @@ from pathlib import Path
 # CONFIG
 # ============================================================
 ETHERSCAN_API_KEY = os.environ.get("ETHERSCAN_API_KEY", "YourApiKeyToken")
-BASE_URL = "https://api.etherscan.io/api"
+BASE_URL = "https://api.etherscan.io/v2/api"
 DATA_DIR = Path("data")
 RATE_LIMIT_DELAY = 0.25  # 4 req/sec (stay under 5/sec free limit)
 
@@ -79,6 +79,7 @@ EXCHANGE_ADDRESSES = {
 def etherscan_get(params, retries=3):
     """Make Etherscan API call with rate limiting and retries."""
     params["apikey"] = ETHERSCAN_API_KEY
+    params["chainid"] = 1
     for attempt in range(retries):
         try:
             time.sleep(RATE_LIMIT_DELAY)
