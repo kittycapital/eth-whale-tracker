@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.1/kakao.min.js" crossorigin="anonymous" async></script>
 <style>
-:root{--hv-primary:#3b82f6;--hv-primary-light:#60a5fa;--hv-primary-dark:#2563eb;--hv-primary-glow:rgba(59,130,246,0.12);--hv-up:#22c55e;--hv-up-bg:rgba(34,197,94,0.1);--hv-down:#ef4444;--hv-down-bg:rgba(239,68,68,0.1);--hv-warning:#f59e0b;--hv-warning-bg:rgba(245,158,11,0.1);--hv-neutral:#6b7280;--hv-bg-base:#000;--hv-bg-surface:#0a0a0a;--hv-bg-card:#111;--hv-bg-card-hover:#181818;--hv-bg-elevated:#1a1a1a;--hv-text-primary:#e5e5e5;--hv-text-secondary:#8a8a8a;--hv-text-tertiary:#555;--hv-text-muted:#3a3a3a;--hv-border:rgba(255,255,255,0.06);--hv-border-strong:rgba(255,255,255,0.12);--hv-font-display:'Plus Jakarta Sans',sans-serif;--hv-font-body:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;--hv-font-mono:'JetBrains Mono','SF Mono',monospace;--hv-space-xs:8px;--hv-space-sm:12px;--hv-space-md:16px;--hv-space-lg:24px;--hv-space-xl:32px;--hv-radius-sm:6px;--hv-radius-md:10px;--hv-radius-lg:14px;--hv-shadow-sm:0 1px 3px rgba(0,0,0,.5);--hv-shadow-md:0 4px 12px rgba(0,0,0,.6);--hv-shadow-lg:0 8px 32px rgba(0,0,0,.7);--hv-transition-fast:150ms ease;--hv-transition:250ms ease;--hv-max-width:960px;--hv-header-height:60px;--cl-vitalik:#6366f1;--cl-ef:#f59e0b;--cl-sell:#ef4444;--cl-outflow:#f97316;--cl-price:#3b82f6}
+:root{--hv-primary:#3b82f6;--hv-primary-light:#60a5fa;--hv-primary-dark:#2563eb;--hv-primary-glow:rgba(59,130,246,0.12);--hv-up:#22c55e;--hv-up-bg:rgba(34,197,94,0.1);--hv-down:#ef4444;--hv-down-bg:rgba(239,68,68,0.1);--hv-warning:#f59e0b;--hv-warning-bg:rgba(245,158,11,0.1);--hv-neutral:#6b7280;--hv-bg-base:#000;--hv-bg-surface:#0a0a0a;--hv-bg-card:#111;--hv-bg-card-hover:#181818;--hv-bg-elevated:#1a1a1a;--hv-text-primary:#e5e5e5;--hv-text-secondary:#8a8a8a;--hv-text-tertiary:#555;--hv-text-muted:#3a3a3a;--hv-border:rgba(255,255,255,0.06);--hv-border-strong:rgba(255,255,255,0.12);--hv-font-display:'Plus Jakarta Sans',sans-serif;--hv-font-body:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;--hv-font-mono:'JetBrains Mono','SF Mono',monospace;--hv-space-xs:8px;--hv-space-sm:12px;--hv-space-md:16px;--hv-space-lg:24px;--hv-space-xl:32px;--hv-radius-sm:6px;--hv-radius-md:10px;--hv-radius-lg:14px;--hv-shadow-sm:0 1px 3px rgba(0,0,0,.5);--hv-shadow-md:0 4px 12px rgba(0,0,0,.6);--hv-shadow-lg:0 8px 32px rgba(0,0,0,.7);--hv-transition-fast:150ms ease;--hv-transition:250ms ease;--hv-max-width:960px;--hv-header-height:60px;--cl-vitalik:#818cf8;--cl-ef:#fbbf24;--cl-sell:#ef4444;--cl-outflow:#f97316;--cl-price:#3b82f6}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden}body{font-family:var(--hv-font-body);background:var(--hv-bg-base);color:var(--hv-text-primary);line-height:1.6;min-height:100vh;overflow-x:hidden}::selection{background:var(--hv-primary);color:#fff}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--hv-bg-base)}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
 /* HEADER */
@@ -38,7 +38,7 @@
 .chart-legend{display:flex;align-items:center;gap:16px;padding:8px var(--hv-space-lg);flex-wrap:wrap}.legend-item{display:flex;align-items:center;gap:6px;font-family:var(--hv-font-mono);font-size:.72rem;color:var(--hv-text-secondary)}.legend-dot{width:8px;height:8px;border-radius:2px}.legend-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid currentColor}
 
 /* TABLE */
-.sell-table{width:100%;border-collapse:collapse;font-size:.78rem}.sell-table th{text-align:left;color:var(--hv-text-tertiary);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--hv-border);font-family:var(--hv-font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}.sell-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--hv-font-mono);font-size:.78rem}.sell-table tr:hover td{background:rgba(255,255,255,.02)}.sell-badge{display:inline-block;font-size:.68rem;padding:2px 8px;border-radius:4px;font-weight:600}.sell-badge.exchange{background:rgba(239,68,68,.12);color:var(--cl-sell)}.sell-badge.outflow{background:rgba(249,115,22,.12);color:var(--cl-outflow)}.sell-badge.vitalik{background:rgba(99,102,241,.12);color:var(--cl-vitalik)}.sell-badge.ef{background:rgba(245,158,11,.12);color:var(--cl-ef)}
+.sell-table{width:100%;border-collapse:collapse;font-size:.78rem}.sell-table th{text-align:left;color:var(--hv-text-tertiary);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--hv-border);font-family:var(--hv-font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}.sell-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--hv-font-mono);font-size:.78rem}.sell-table tr:hover td{background:rgba(255,255,255,.02)}.sell-badge{display:inline-block;font-size:.68rem;padding:2px 8px;border-radius:4px;font-weight:600}.sell-badge.exchange{background:rgba(239,68,68,.12);color:var(--cl-sell)}.sell-badge.outflow{background:rgba(249,115,22,.12);color:var(--cl-outflow)}.sell-badge.vitalik{background:rgba(129,140,248,.15);color:var(--cl-vitalik)}.sell-badge.ef{background:rgba(251,191,36,.15);color:var(--cl-ef)}
 
 /* WALLET LIST */
 .wallet-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}.wallet-item:last-child{border-bottom:none}.wallet-label{font-size:.82rem;font-weight:500}.wallet-addr{font-family:var(--hv-font-mono);font-size:.7rem;color:var(--hv-text-muted)}.wallet-addr a{color:var(--hv-text-tertiary);text-decoration:none;transition:color .15s}.wallet-addr a:hover{color:var(--hv-primary-light)}
@@ -78,12 +78,12 @@
   <!-- SUMMARY -->
   <div class="summary-grid">
     <div class="summary-card">
-      <div class="summary-label">Vitalik 보유량</div>
+      <div class="summary-label" style="color:#a5b4fc">비탈릭 부테린 보유량</div>
       <div class="summary-value" style="color:var(--cl-vitalik)" id="vBal">—</div>
       <div class="summary-sub" id="vUsd"></div>
     </div>
     <div class="summary-card">
-      <div class="summary-label">Ethereum Foundation 보유량</div>
+      <div class="summary-label" style="color:#fcd34d">이더리움 파운데이션 보유량</div>
       <div class="summary-value" style="color:var(--cl-ef)" id="eBal">—</div>
       <div class="summary-sub" id="eUsd"></div>
     </div>
@@ -108,8 +108,8 @@
     </div>
     <div class="chart-legend">
       <div class="legend-item"><span class="legend-dot" style="background:var(--cl-price)"></span> ETH 가격</div>
-      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-vitalik)"></span> Vitalik</div>
-      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-ef)"></span> EF</div>
+      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-vitalik)"></span> 비탈릭 부테린</div>
+      <div class="legend-item"><span class="legend-tri" style="color:var(--cl-ef)"></span> 이더리움 파운데이션</div>
     </div>
     <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
     <div class="inline-share" id="inlineShare1"></div>
@@ -172,7 +172,7 @@ function copyToClipboard(t){try{window.parent.postMessage({type:'clipboard',text
 
 function flashCopied(btn){if(!btn)return;var orig=btn.innerHTML;btn.style.background='#22c55e';btn.style.color='#fff';btn.style.borderColor='#22c55e';var hl=btn.querySelector('.label-text');btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>'+(hl?'<span class="label-text" style="color:#fff">복사됨!</span>':'');setTimeout(function(){btn.style.background='';btn.style.color='';btn.style.borderColor='';btn.innerHTML=orig;},2000);}
 
-function getShareText(){var vBal=document.getElementById('vBal').textContent;var eBal=document.getElementById('eBal').textContent;return'🐋 ETH 고래 지갑 추적\nVitalik: '+vBal+' ETH\nEF: '+eBal+' ETH\n\n#Ethereum #WhaleTracker via herdvibe.com';}
+function getShareText(){var vBal=document.getElementById('vBal').textContent;var eBal=document.getElementById('eBal').textContent;return'🐋 ETH 고래 지갑 추적\n비탈릭 부테린: '+vBal+'\n이더리움 파운데이션: '+eBal+'\n\n#Ethereum #WhaleTracker via herdvibe.com';}
 
 function doShare(p,btn){var u=SHARE_URL;var t=encodeURIComponent(getShareText());var eu=encodeURIComponent(u);switch(p){case'twitter':window.open('https://twitter.com/intent/tweet?text='+t+'&url='+eu,'_blank');break;case'telegram':window.open('https://t.me/share/url?url='+eu+'&text='+t,'_blank');break;case'kakao':kakaoShare();break;case'instagram':copyToClipboard(u);flashCopied(btn);toast('링크가 복사되었습니다 ✓');break;case'link':copyToClipboard(u);flashCopied(btn);toast('링크가 복사되었습니다 ✓');break;}}
 
@@ -437,7 +437,7 @@ function renderChart(){
             var sells=ctx.datasetIndex===1?vSells:eSells;
             var s=sells[ctx.dataIndex];
             if(!s)return'';
-            var who=ctx.datasetIndex===1?'Vitalik':'EF';
+            var who=ctx.datasetIndex===1?'비탈릭 부테린':'이더리움 파운데이션';
             var lines=[who+': -'+fmtETH(s.amount)+' ETH','가격: $'+s.y.toLocaleString(),'환산: '+fmtUSD(s.usd)];
             if(s.exchange)lines.push('거래소: '+s.exchange);
             else if(s.to)lines.push('대상: '+s.to);
@@ -471,7 +471,7 @@ function renderTable(){
   tbody.innerHTML=events.slice(0,50).map(function(e){
     var price=findPrice(e.date);
     var usd=Math.round(e.amount_eth*price);
-    var whoBadge=e.group==='vitalik'?'<span class="sell-badge vitalik">Vitalik</span>':'<span class="sell-badge ef">EF</span>';
+    var whoBadge=e.group==='vitalik'?'<span class="sell-badge vitalik">비탈릭</span>':'<span class="sell-badge ef">이더리움 파운데이션</span>';
     var typeBadge=e.type==='exchange_sell'?'<span class="sell-badge exchange">거래소</span>':'<span class="sell-badge outflow">전송</span>';
     var dest=e.exchange||(e.to?e.to.toString().slice(0,12)+'...':'—');
     return'<tr><td>'+e.date+'</td><td>'+whoBadge+'</td><td style="color:var(--cl-sell)">-'+fmtETH(e.amount_eth)+'</td><td>$'+price.toLocaleString()+'</td><td>'+fmtUSD(usd)+'</td><td>'+typeBadge+'</td><td style="color:var(--hv-text-tertiary)">'+dest+'</td></tr>';
