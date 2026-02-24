@@ -443,12 +443,21 @@ def run_update():
 
     for wallet_id, wallet_info in WALLETS.items():
         address = wallet_info["address"]
-        existing = chart_data["wallets"].get(wallet_id, {})
-        last_block = existing.get("last_block", 0)
+        existing = chart_data.get("wallets", {}).get(wallet_id, None)
+
+        # New wallet not in existing data - do full collection for it
+        if existing is None:
+            print(f"\nNew wallet detected: {wallet_info['label']} - running full collection...")
+            existing = {"info": wallet_info, "daily_balances": {}, "sell_events": [], "last_block": 0}
+            last_block = 0
+            txs_start = 0
+        else:
+            last_block = existing.get("last_block", 0)
+            txs_start = last_block + 1
 
         print(f"\nUpdating: {wallet_info['label']} (from block {last_block})")
 
-        txs = fetch_all_transactions(address, start_block=last_block + 1)
+        txs = fetch_all_transactions(address, start_block=txs_start)
 
         if txs:
             print(f"  New transactions: {len(txs)}")
@@ -481,6 +490,10 @@ def run_update():
 
         existing["current_balance"] = round(current_balance, 4)
         existing["last_updated"] = datetime.now(timezone.utc).isoformat()
+        if "info" not in existing:
+            existing["info"] = wallet_info
+        if "wallets" not in chart_data:
+            chart_data["wallets"] = {}
         chart_data["wallets"][wallet_id] = existing
 
     # Recalculate group totals
