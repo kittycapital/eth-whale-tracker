@@ -456,7 +456,7 @@ function renderTable(){
   var tbody=document.getElementById('sellTableBody');
   if(!events.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--hv-text-muted);padding:24px">데이터 없음</td></tr>';return;}
 
-  tbody.innerHTML=events.slice(0,50).map(function(e){
+  tbody.innerHTML=events.slice(0,20).map(function(e){
     var price=findPrice(e.date);
     var usd=Math.round(e.amount_eth*price);
     var whoBadge=e.group==='vitalik'?'<span class="sell-badge vitalik">비탈릭</span>':'<span class="sell-badge ef">이더리움 파운데이션</span>';
