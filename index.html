@@ -176,7 +176,7 @@ function doShare(p,btn){var u=SHARE_URL;var t=encodeURIComponent(getShareText())
 function toast(msg){var c=document.querySelector('.toast-wrap');if(!c){c=document.createElement('div');c.className='toast-wrap';document.body.appendChild(c);}var t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transform='translateY(12px)';t.style.transition='.3s';setTimeout(function(){t.remove();},300);},3000);}
 
 /* ===== WATERMARK ===== */
-var watermarkPlugin={id:'herdvibeWatermark',beforeDraw:function(chart){var ctx=chart.ctx,ca=chart.chartArea;if(!ca)return;ctx.save();ctx.font='700 42px "Plus Jakarta Sans",sans-serif';ctx.fillStyle='rgba(255,255,255,0.03)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Herdvibe.com',(ca.left+ca.right)/2,(ca.top+ca.bottom)/2);ctx.restore();}};
+var watermarkPlugin={id:'herdvibeWatermark',beforeDraw:function(chart){var ctx=chart.ctx,ca=chart.chartArea;if(!ca)return;var w=ca.right-ca.left;var fs=Math.min(42,w*0.06);ctx.save();ctx.font='700 '+fs+'px "Plus Jakarta Sans",sans-serif';ctx.fillStyle='rgba(255,255,255,0.03)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Herdvibe.com',(ca.left+ca.right)/2,(ca.top+ca.bottom)/2);ctx.restore();}};
 
 /* ===== STATE ===== */
 var DATA=null,mainChart=null;
